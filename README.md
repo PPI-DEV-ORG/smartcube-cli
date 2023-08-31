@@ -4,7 +4,7 @@ Module multiprocessing video source
 ```
 cd existing_repo
 
-git remote add origin https://gitlab.skwn.dev/maulana.sekawanmedia/wbs-web-admin.git
+git remote add origin https://github.com/PPI-Capstone-Project/multiprocessing_video_source_modul.git
 
 git branch -M main
 
