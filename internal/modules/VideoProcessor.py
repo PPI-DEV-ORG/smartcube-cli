@@ -18,8 +18,8 @@ class VideoProcessor(IVideoProcessor):
 
         cap.release()
 
-    def streamVideoFrameUSB(self, rtsp: str, callbackFrame):
-        cap = cv2.VideoCapture(rtsp)
+    def streamVideoFrameUSB(self, deviceNumber: int, callbackFrame):
+        cap = cv2.VideoCapture(deviceNumber)
         while True:
             ret, frame = cap.read()
             if not ret:
