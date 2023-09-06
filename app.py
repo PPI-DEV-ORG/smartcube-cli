@@ -13,26 +13,15 @@ def present(frame, bbox):
 
 def main():
 
-    # Init Detection Model
+    #Init Detection Model
     objectDetectorModel = ObjectDetectorModel()
 
-    # Init OpenCV
+    #Init OpenCV
     videoProcessor = VideoProcessor()
 
-    #RTSP
-    # camera_ids = [
-    # 'rtsp://192.168.215.211:8080/h264.sdp', 
-    # 'rtsp://192.168.215.214:8081/h264.sdp', 
-    # 'rtsp://192.168.215.219:8080/h264.sdp']
-    # camera_ids = [0]
-
-    #Init IP Camera
+    #Init Cameras
     cameras = [
         IPCamera("rtsp://192.168.212.254:8080/h264.sdp", {'device_vendor_number': 'MK100212'}, videoProcessor),
-        # IPCamera(1, {'device_vendor_number': 'MK100212'}, videoProcessor),
-        # IPCamera(2, {'device_vendor_number': 'MK100212'}, videoProcessor),
-        # IPCamera(3, {'device_vendor_number': 'MK100212'}, videoProcessor),
-
         USBCamera(0, {'device_vendor_number': 'MLL100212'}, videoProcessor)
     ]
 
