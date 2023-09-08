@@ -14,5 +14,5 @@ class USBCamera(CameraDevice):
     def getDeviceMetadata(self):
         return self.metadata
 
-    def streamVideoFrame(self, callbackFrame: Callable[[np.ndarray], None]):
-        self.videoProcessor.streamVideoFrameUSB(self.deviceNumber, callbackFrame)
+    def streamVideoFrame(self, callback: Callable[[np.ndarray], None]):
+        self.videoProcessor.streamVideoFrameUSB(self.deviceNumber, callback)

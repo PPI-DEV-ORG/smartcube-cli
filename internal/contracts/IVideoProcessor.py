@@ -1,20 +1,25 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+import typing
 
 import numpy as np
 
 class IVideoProcessor(ABC): #Interfaces
     
     @abstractmethod
-    def streamVideoFrameRTSP(self, rtsp: str, callbackFrame: Callable[[np.ndarray], None]):
+    def streamVideoFrameRTSP(self, rtsp: str, callback: Callable[[np.ndarray], None]):
         pass
 
     @abstractmethod
-    def streamVideoFrameUSB(self, deviceNumber: int, callbackFrame: Callable[[np.ndarray], None]):
+    def streamVideoFrameUSB(self, deviceNumber: int, callback: Callable[[np.ndarray], None]):
         pass
 
     @abstractmethod
-    def drawRectangle(self, frame: np.ndarray, bbox: np.ndarray):
+    def drawRectangle(self, frame: np.ndarray, bbox: list[tuple], color: int):
+        pass
+
+    @abstractmethod
+    def writeText(self, frame: np.ndarray, text: str,  color: typing.Sequence[float], xcoordinate: int, ycoordinate: int):
         pass
 
     @abstractmethod
