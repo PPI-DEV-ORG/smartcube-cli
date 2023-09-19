@@ -1,13 +1,19 @@
 from internal.contracts.IObjectDetectorModel import *
 from internal.contracts.IVideoProcessor import IVideoProcessor
 from tensorflow.python.keras.utils.data_utils import get_file
+from collections.abc import Callable
 import time, os, tensorflow as tf
 
 np.random.seed(123)
 
 class ObjectDetectorModel(IObjectDetectorModel):
 
-    def __init__(self, videoProcessor: IVideoProcessor):
+    def __init__(self, videoProcessor: IVideoProcessor,
+                 iou_threshold: float = 0.5,
+                 score_threshold: float = 0.5,
+                 confidence: int = 50,
+                 max_output_size: int = 50,
+                 onObjectDetected: Callable[[str, int, np.ndarray], None] = lambda classLabel, confidence, frame: None):
         self.cacheDir = "./pretrained_models"
         self.modelName = "ssd_mobilenet_v2_320x320_coco17_tpu-8"
         self.colorList: np.ndarray
@@ -17,10 +23,31 @@ class ObjectDetectorModel(IObjectDetectorModel):
         self.__readClasses("coco.names")
         self.__downloadModel("http://download.tensorflow.org/models/object_detection/tf2/20200711/ssd_mobilenet_v2_320x320_coco17_tpu-8.tar.gz")
         self.__loadTensorModel()
+        self.__setThreshold(iou_threshold, score_threshold)
+        self.__setMaxOutputSize(max_output_size)
+        self.__setConfidence(confidence)
+        self.__onObjectDetected(onObjectDetected)
 
-    def processFrame(self, frame: np.ndarray) -> np.ndarray: 
+    def processFrame(self, frame: np.ndarray) -> np.ndarray:
         return self.__detectObject(frame)
-       
+
+    def __setThreshold(self, iou_threshold: float, score_threshold: float):
+        self.iou_threshold = iou_threshold
+        self.score_threshold = score_threshold
+        return self
+
+    def __setConfidence(self, confidence: int):
+        self.confidence = confidence
+        return self
+
+    def __setMaxOutputSize(self, max_output_size: int):
+        self.max_output_size = max_output_size
+        return self
+
+    def __onObjectDetected(self, callback):
+        self.callbackOnDetection = callback
+        return self
+
     def __downloadModel(self, modelUrl):
 
         fileName = os.path.basename(modelUrl)
@@ -30,7 +57,7 @@ class ObjectDetectorModel(IObjectDetectorModel):
 
         get_file(fname=fileName, origin=modelUrl, cache_dir=self.cacheDir,
                  cache_subdir="checkpoints", extract=True)
-        
+
     def __readClasses(self, classesFilePath):
         with open(classesFilePath, 'r') as f:
             self.classesList = f.read().splitlines()
@@ -43,7 +70,6 @@ class ObjectDetectorModel(IObjectDetectorModel):
         print("Model " + self.modelName + " loaded successfully...")
 
     def __detectObject(self, frame: np.ndarray) -> np.ndarray:
-
         inputTensor = tf.convert_to_tensor(frame, dtype=tf.uint8)
         inputTensor = inputTensor[tf.newaxis, ...]
 
@@ -55,8 +81,10 @@ class ObjectDetectorModel(IObjectDetectorModel):
 
         imH, imW, imC = frame.shape
 
-        bboxIdx = tf.image.non_max_suppression(bboxs, classScores, max_output_size=50,
-        iou_threshold=0.5, score_threshold=0.5)
+        bboxIdx = tf.image.non_max_suppression(bboxs, classScores, max_output_size=self.max_output_size, iou_threshold=self.iou_threshold, score_threshold=self.score_threshold)
+
+        classConfidence = 0
+        classLabelText = ""
 
         if len(bboxIdx) != 0:
             for i in bboxIdx:
@@ -77,5 +105,8 @@ class ObjectDetectorModel(IObjectDetectorModel):
 
                 self.videoProcessor.writeText(frame, displayText, classColor, xmin, ymin) # type: ignore
                 self.videoProcessor.drawRectangle(frame, [(xmin, ymin), (xmax, ymax)], classColor) # type: ignore
+
+        if (classConfidence > self.confidence):
+            self.callbackOnDetection(classLabelText, classConfidence, frame)
 
         return frame
