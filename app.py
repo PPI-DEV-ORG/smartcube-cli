@@ -3,10 +3,26 @@ from internal.modules.IPCamera import *
 from internal.modules.USBCamera import *
 from internal.modules.VideoProcessor import *
 from internal.modules.ObjectDetectorModel import *
- 
+import time
+
+lastDetectionTime = time.time()
+breakTimeWhenObjectDetected = 30 # seconds
+
 def detectObject(camera: CameraDevice, videoProcessor: VideoProcessor):
-    model = ObjectDetectorModel(videoProcessor)
+    model = ObjectDetectorModel(videoProcessor, 0.5, 0.5, 60, 50, handleOnObjectDetected)
     camera.streamVideoFrame(lambda frame: videoProcessor.presentInWindow(model.processFrame(frame)))
+
+def handleOnObjectDetected(classLabel, confidence, frame):
+    global lastDetectionTime
+    currentTime = time.time()
+
+    # Cek apakah sudah 30 detik sejak pemanggilan terakhir
+    if currentTime - lastDetectionTime >= breakTimeWhenObjectDetected:
+        print("frame : ", frame)
+        print(f"Deteksi objek: {classLabel} dengan kepercayaan {confidence}%")
+
+        # Perbarui waktu terakhir callback dipanggil
+        lastDetectionTime = currentTime
 
 def main():
 
@@ -31,8 +47,6 @@ def main():
     # Tunggu semua proses selesai
     for p in processes:
         p.join()
-   
+
 if __name__ == '__main__':
     main()
-
-
