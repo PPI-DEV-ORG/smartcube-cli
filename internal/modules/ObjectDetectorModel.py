@@ -9,11 +9,7 @@ np.random.seed(123)
 class ObjectDetectorModel(IObjectDetectorModel):
 
     def __init__(self, videoProcessor: IVideoProcessor,
-                 iou_threshold: float = 0.5,
-                 score_threshold: float = 0.5,
-                 confidence: int = 50,
-                 max_output_size: int = 50,
-                 onObjectDetected: Callable[[str, int, np.ndarray], None] = lambda classLabel, confidence, frame: None):
+                 ):
         self.cacheDir = "./pretrained_models"
         self.modelName = "ssd_mobilenet_v2_320x320_coco17_tpu-8"
         self.colorList: np.ndarray
@@ -23,12 +19,19 @@ class ObjectDetectorModel(IObjectDetectorModel):
         self.__readClasses("coco.names")
         self.__downloadModel("http://download.tensorflow.org/models/object_detection/tf2/20200711/ssd_mobilenet_v2_320x320_coco17_tpu-8.tar.gz")
         self.__loadTensorModel()
+
+
+    def processFrame(self, frame: np.ndarray, iou_threshold: float = 0.5,
+                 score_threshold: float = 0.5,
+                 confidence: int = 50,
+                 max_output_size: int = 50,
+                 onObjectDetected: Callable[[str, int, np.ndarray], None] = lambda classLabel, confidence, frame: None) -> np.ndarray:
+        
         self.__setThreshold(iou_threshold, score_threshold)
         self.__setMaxOutputSize(max_output_size)
         self.__setConfidence(confidence)
         self.__onObjectDetected(onObjectDetected)
-
-    def processFrame(self, frame: np.ndarray) -> np.ndarray:
+        
         return self.__detectObject(frame)
 
     def __setThreshold(self, iou_threshold: float, score_threshold: float):

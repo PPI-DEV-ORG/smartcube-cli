@@ -14,8 +14,9 @@ breakTimeWhenObjectDetected = 30 # seconds
 BASE_API_URL = "http://localhost:3000"
 
 def detectObject(camera: CameraDevice, videoProcessor: VideoProcessor):
-    model = ObjectDetectorModel(videoProcessor, 0.5, 0.5, 60, 50, handleOnObjectDetected)
-    camera.streamVideoFrame(lambda frame: videoProcessor.presentInWindow(model.processFrame(frame)))
+    model = ObjectDetectorModel(videoProcessor)
+    camera.streamVideoFrame(lambda frame: videoProcessor.presentInWindow(
+        model.processFrame(frame, 0.7, 0.6, 60, 50, handleOnObjectDetected)))
 
 def handleOnObjectDetected(classLabel, confidence, frame):
     global lastDetectionTime
