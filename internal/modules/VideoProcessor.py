@@ -3,6 +3,7 @@ import cv2
 from internal.contracts.IVideoProcessor import *
 from internal.contracts.IObjectDetectorModel import *
 from internal.modules.ObjectDetectorModel import *
+from PIL import Image
 
 class VideoProcessor(IVideoProcessor):
 
@@ -47,3 +48,20 @@ class VideoProcessor(IVideoProcessor):
         self.drawRectangle(frame, bbox, 1)
         self.presentInWindow(frame)
         
+    def convertFrameToImage(self, frame: np.ndarray) -> io.BufferedReader:
+        frame_pil = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        
+        # Create an in-memory binary stream
+        buffered_stream = io.BytesIO()
+
+        # Save the PIL Image to the binary stream in a specific format (e.g., JPEG)
+        frame_pil.save(buffered_stream, format="JPEG")
+
+        buffered_stream.seek(0)
+
+        # Create a BufferedReader from the binary stream
+        buffered_reader = io.BufferedReader(buffered_stream) # type: ignore
+
+        # buffered_reader.close()
+
+        return buffered_reader
