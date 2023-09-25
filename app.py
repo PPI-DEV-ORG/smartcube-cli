@@ -1,4 +1,5 @@
 import multiprocessing
+import string
 from internal.modules.IPCamera import *
 from internal.modules.USBCamera import *
 from internal.modules.VideoProcessor import *
@@ -6,17 +7,21 @@ from internal.modules.ObjectDetectorModel import *
 import time
 import requests
 import numpy as np
-from concurrent.futures import ThreadPoolExecutor
+import asyncio
+import random
 
+BASE_API_URL = "http://localhost:8080"
 
 lastDetectionTime = time.time()
-breakTimeWhenObjectDetected = 30 # seconds
-BASE_API_URL = "http://localhost:3000"
+breakTimeWhenObjectDetected = 15
+
+# #Init OpenCV
+videoProcessor = VideoProcessor()
 
 def detectObject(camera: CameraDevice, videoProcessor: VideoProcessor):
     model = ObjectDetectorModel(videoProcessor)
-    camera.streamVideoFrame(lambda frame: videoProcessor.presentInWindow(
-        model.processFrame(frame, 0.7, 0.6, 60, 50, handleOnObjectDetected)))
+    camera.streamVideoFrame(lambda frame: videoProcessor.presentInWindow(model.processFrame(frame, 0.5, 0.6, 60, 50, handleOnObjectDetected)))
+
 
 def handleOnObjectDetected(classLabel, confidence, frame):
     global lastDetectionTime
@@ -24,47 +29,38 @@ def handleOnObjectDetected(classLabel, confidence, frame):
 
     # Cek apakah sudah 30 detik sejak pemanggilan terakhir
     if currentTime - lastDetectionTime >= breakTimeWhenObjectDetected:
-        print("frame : ", frame)
-        print(f"Deteksi objek: {classLabel} dengan kepercayaan {confidence}%")
+
+        desc = f"Deteksi objek: {classLabel} dengan kepercayaan {confidence}%"
+
+        print(desc)
 
         # send notification
-        sendNotification(frame)
+        asyncio.run(sendNotification(frame, classLabel, desc))
 
         # Perbarui waktu terakhir callback dipanggil
         lastDetectionTime = currentTime
 
-def sendNotification(frame: np.ndarray):
-    # Membuat ThreadPoolExecutor dengan jumlah thread sesuai kebutuhan
-    # Misalnya, kita gunakan 5 thread di sini
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        # Membuat beberapa tugas untuk mengirim notifikasi
-        executor.submit(handleSendNotification, frame)
 
-def handleSendNotification(frame: np.ndarray):
-    print("Sending notification...")
-
+async def sendNotification(frame: np.ndarray, ckassLabel: str, description):
+    
     data = {
-        "title": "Objek terdeteksi",
-        "description": "Objek terdeteksi pada kamera 1",
+        "title": f"Telah terdeteksi object {ckassLabel}",
+        "description": description,
     }
 
-    files = {
-        'image': ('gambar.png', open('1kb.png', 'rb'), 'image/png')
-    }
+    fileName = ''.join(random.choices(string.ascii_uppercase + string.digits, k=12)) + '.jpeg'
+
+    files = {'image': (fileName, videoProcessor.convertFrameToImage(frame), 'image/jpeg')}
 
     response = requests.post(BASE_API_URL + "/notification", data=data, files=files)
 
-    # Cek status kode HTTP untuk memastikan permintaan berhasil
     if response.status_code == 200:
         print("Notification sent successfully")
     else:
         print(f"Failed to send notification. Status code: {response.status_code}")
-
+    
 
 def main():
-
-    #Init OpenCV
-    videoProcessor = VideoProcessor() #Parent
 
     #Init Cameras
     cameras: list[CameraDevice] = [
@@ -74,14 +70,12 @@ def main():
     ]
 
     processes = []
-    # Spawn Child Process for each device
     for camera in cameras:
         p = multiprocessing.Process(target=detectObject, args=(camera,videoProcessor)) #child
         p.daemon = True
         p.start()
         processes.append(p)
 
-    # Tunggu semua proses selesai
     for p in processes:
         p.join()
 

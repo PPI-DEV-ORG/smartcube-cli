@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+import io
 import typing
 
 import numpy as np
@@ -28,4 +29,8 @@ class IVideoProcessor(ABC): #Interfaces
 
     @abstractmethod
     def redraw(self, frame: np.ndarray, bbox: np.ndarray):
+        pass
+
+    @abstractmethod
+    def convertFrameToImage(self, frame: np.ndarray) -> io.BufferedReader:
         pass
