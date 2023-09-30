@@ -1,8 +1,6 @@
 import cv2
 
 from internal.contracts.IVideoProcessor import *
-from internal.contracts.IObjectDetectorModel import *
-from internal.modules.ObjectDetectorModel import *
 from PIL import Image
 
 class VideoProcessor(IVideoProcessor):
