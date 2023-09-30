@@ -20,6 +20,11 @@ class ObjectDetectorModel(IObjectDetectorModel):
         self.__downloadModel("http://download.tensorflow.org/models/object_detection/tf2/20200711/ssd_mobilenet_v2_320x320_coco17_tpu-8.tar.gz")
         self.__loadTensorModel()
 
+    def getModelType(self) -> str:
+        return "objectDetection"
+    
+    def getModelVersion(self) -> str:
+        return "v1.0.0"
 
     def processFrame(self, frame: np.ndarray, iou_threshold: float = 0.5,
                  score_threshold: float = 0.5,

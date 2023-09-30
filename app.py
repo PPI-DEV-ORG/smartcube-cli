@@ -1,9 +1,11 @@
-import multiprocessing
-import string
 from internal.modules.IPCamera import *
 from internal.modules.USBCamera import *
 from internal.modules.VideoProcessor import *
-from internal.modules.ObjectDetectorModel import *
+from internal.modules.ModelRegistrar import ModelRegistrar
+from internal.modules.DeviceRegistrar import DeviceRegistrar
+from internal.registered_models.ObjectDetectorModel import *
+import multiprocessing
+import string
 import time
 import requests
 import numpy as np
@@ -18,9 +20,11 @@ breakTimeWhenObjectDetected = 15
 # #Init OpenCV
 videoProcessor = VideoProcessor()
 
-def detectObject(camera: CameraDevice, videoProcessor: VideoProcessor):
-    model = ObjectDetectorModel(videoProcessor)
-    camera.streamVideoFrame(lambda frame: videoProcessor.presentInWindow(model.processFrame(frame, 0.5, 0.6, 60, 50, handleOnObjectDetected)))
+def instantiateDevice(device: dict[str, CameraDevice], videoProcessor: VideoProcessor):
+
+    model = device["assigned_model_class"](videoProcessor)  # type: ignore
+
+    device["device_instance"].streamVideoFrame(lambda frame: videoProcessor.presentInWindow(model.processFrame(frame, 0.5, 0.6, 60, 50, handleOnObjectDetected)))
 
 
 def handleOnObjectDetected(classLabel, confidence, frame):
@@ -52,26 +56,29 @@ async def sendNotification(frame: np.ndarray, ckassLabel: str, description):
 
     files = {'image': (fileName, videoProcessor.convertFrameToImage(frame), 'image/jpeg')}
 
-    response = requests.post(BASE_API_URL + "/notification", data=data, files=files)
+    try:
+        response = requests.post(BASE_API_URL + "/notification", data=data, files=files)
 
-    if response.status_code == 200:
-        print("Notification sent successfully")
-    else:
-        print(f"Failed to send notification. Status code: {response.status_code}")
+        if response.status_code == 200:
+            print("Notification sent successfully")
+        else:
+            print(f"Failed to send notification. Status code: {response.status_code}")
+    except:
+        print("Error occured")
+   
     
 
 def main():
 
-    #Init Cameras
-    cameras: list[CameraDevice] = [
-        # IPCamera("rtsp://192.168.212.254:8080/h264.sdp", {'device_vendor_number': 'MK100212'}, videoProcessor),
-        # IPCamera("rtsp://192.168.212.198:8080/h264.sdp", {'device_vendor_number': 'MK100212'}, videoProcessor),
-        USBCamera(0, {'device_vendor_number': 'MLL100212'},  videoProcessor)
-    ]
+    modelRegistrar = ModelRegistrar()
+    modelRegistrar.load()
+
+    deviceRegistar = DeviceRegistrar()
+    deviceRegistar.loadCamera(modelRegistrar=modelRegistrar, videoProcessor=videoProcessor)
 
     processes = []
-    for camera in cameras:
-        p = multiprocessing.Process(target=detectObject, args=(camera,videoProcessor)) #child
+    for device in deviceRegistar.getDevicesInstance():
+        p = multiprocessing.Process(target=instantiateDevice, args=(device,videoProcessor)) #child
         p.daemon = True
         p.start()
         processes.append(p)

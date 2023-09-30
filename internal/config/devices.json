@@ -1,0 +1,16 @@
+{
+    "devices": [
+        {
+            "type": "camera",
+            "usb_id": "/dev/video0",
+            "rtsp_address": "",
+            "source_type": "usb",
+            "assigned_model_type": "objectDetection",
+            "assigned_model_index": 0,
+            "additional_info": {
+
+            }
+        }
+        
+    ]
+}
