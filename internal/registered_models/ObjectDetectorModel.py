@@ -26,7 +26,7 @@ class ObjectDetectorModel(IObjectDetectorModel):
     def getModelVersion(self) -> str:
         return "v1.0.0"
 
-    def processFrame(self, frame: np.ndarray, iou_threshold: float = 0.5,
+    def inferenceFrame(self, frame: np.ndarray, iou_threshold: float = 0.5,
                  score_threshold: float = 0.5,
                  confidence: int = 50,
                  max_output_size: int = 50,

@@ -10,3 +10,7 @@ class IModelRegistrar(ABC):
     @abstractmethod
     def getModelClass(self, index: int) -> IAIModel:
         pass
+
+    @abstractmethod
+    def getAllModelClass(self) -> list[IAIModel]:
+        pass

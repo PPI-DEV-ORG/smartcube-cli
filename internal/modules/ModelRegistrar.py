@@ -33,3 +33,6 @@ class ModelRegistrar(IModelRegistrar):
         #     print(self.__imported_models[i])
         return self.__imported_models[index]
     
+
+    def getAllModelClass(self) -> list[IAIModel]:
+        return self.__imported_models

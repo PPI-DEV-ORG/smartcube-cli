@@ -1,84 +1,75 @@
-from internal.modules.IPCamera import *
-from internal.modules.USBCamera import *
-from internal.modules.VideoProcessor import *
+from internal.modules.VideoProcessor import VideoProcessor
 from internal.modules.ModelRegistrar import ModelRegistrar
 from internal.modules.DeviceRegistrar import DeviceRegistrar
-from internal.registered_models.ObjectDetectorModel import *
+from internal.modules.Notification import Notification
+from internal.modules.HostDeviceStatus import HostDeviceStatus
+from internal.modules.MQTT import MQTTService
+from internal.modules.CommandManager import CommandManager
+from internal.contracts.IDevice import CameraDevice
+import threading
 import multiprocessing
-import string
 import time
-import requests
-import numpy as np
-import asyncio
-import random
 
-BASE_API_URL = "http://localhost:8080"
 
-lastDetectionTime = time.time()
-breakTimeWhenObjectDetected = 15
-
-# #Init OpenCV
-videoProcessor = VideoProcessor()
-
-def instantiateDevice(device: dict[str, CameraDevice], videoProcessor: VideoProcessor):
-
+def instantiateDevice(device: dict[str, CameraDevice], videoProcessor: VideoProcessor, notification: Notification):
     model = device["assigned_model_class"](videoProcessor)  # type: ignore
+    device["device_instance"].streamVideoFrame(lambda frame: videoProcessor.presentInWindow(
+        model.inferenceFrame(frame, 0.5, 0.6, 60, 50, notification.handleOnObjectDetected)))
 
-    device["device_instance"].streamVideoFrame(lambda frame: videoProcessor.presentInWindow(model.processFrame(frame, 0.5, 0.6, 60, 50, handleOnObjectDetected)))
-
-
-def handleOnObjectDetected(classLabel, confidence, frame):
-    global lastDetectionTime
-    currentTime = time.time()
-
-    # Cek apakah sudah 30 detik sejak pemanggilan terakhir
-    if currentTime - lastDetectionTime >= breakTimeWhenObjectDetected:
-
-        desc = f"Deteksi objek: {classLabel} dengan kepercayaan {confidence}%"
-
-        print(desc)
-
-        # send notification
-        asyncio.run(sendNotification(frame, classLabel, desc))
-
-        # Perbarui waktu terakhir callback dipanggil
-        lastDetectionTime = currentTime
-
-
-async def sendNotification(frame: np.ndarray, ckassLabel: str, description):
-    
-    data = {
-        "title": f"Telah terdeteksi object {ckassLabel}",
-        "description": description,
-    }
-
-    fileName = ''.join(random.choices(string.ascii_uppercase + string.digits, k=12)) + '.jpeg'
-
-    files = {'image': (fileName, videoProcessor.convertFrameToImage(frame), 'image/jpeg')}
-
-    try:
-        response = requests.post(BASE_API_URL + "/notification", data=data, files=files)
-
-        if response.status_code == 200:
-            print("Notification sent successfully")
-        else:
-            print(f"Failed to send notification. Status code: {response.status_code}")
-    except:
-        print("Error occured")
-   
-    
 
 def main():
 
+    processes: list[multiprocessing.Process] = []
+
+    #Init Video Processor
+    videoProcessor = VideoProcessor()
+
+    #Init Registered Models
     modelRegistrar = ModelRegistrar()
     modelRegistrar.load()
 
+    #Init All Devices In config/devices.json
     deviceRegistar = DeviceRegistrar()
     deviceRegistar.loadCamera(modelRegistrar=modelRegistrar, videoProcessor=videoProcessor)
 
-    processes = []
+    #Init Notification Module
+    notification = Notification(videoProcessor=videoProcessor)
+
+    #Init Host Devices Status Module
+    hostDevice = HostDeviceStatus()
+
+
+    def restartDevice(arg, messageMetadata):
+        processes[0].terminate()
+        time.sleep(2)
+        processes[0] = multiprocessing.Process(target=instantiateDevice, args=(deviceRegistar.getDevicesInstance()[0], videoProcessor, notification)) #child
+        processes[0].daemon = True
+        processes[0].start()
+
+
+    def getRunningProcesses(arg, messageMetadata):
+        print(processes)
+
+    def getHostDeviceStatus(arg, messageMetadata):
+        print(hostDevice.brief())
+
+    def registerRemoteCommand():
+        commandManager = CommandManager()
+        commandManager.registerCommand("/restart", '', restartDevice)
+        commandManager.registerCommand("/getProcesses", '', getRunningProcesses)
+        commandManager.registerCommand("/hostDeviceStatus", '', getHostDeviceStatus)
+
+        mqttService = MQTTService()
+        mqttService.run(commandManager.recieveMessage)
+        
+
+    #Listening to Remote Command using MQTT Protocol
+    commandListener = threading.Thread(target=registerRemoteCommand)
+    commandListener.start()
+
+
     for device in deviceRegistar.getDevicesInstance():
-        p = multiprocessing.Process(target=instantiateDevice, args=(device,videoProcessor)) #child
+        p = multiprocessing.Process(target=instantiateDevice, args=(device, videoProcessor, notification)) #child
         p.daemon = True
         p.start()
         processes.append(p)
