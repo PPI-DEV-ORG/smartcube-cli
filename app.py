@@ -5,6 +5,7 @@ from internal.modules.Notification import Notification
 from internal.modules.HostDeviceStatus import HostDeviceStatus
 from internal.modules.MQTT import MQTTService
 from internal.modules.CommandManager import CommandManager
+from internal.modules.Config import Config
 from internal.contracts.IDevice import CameraDevice
 import threading
 import multiprocessing
@@ -38,38 +39,43 @@ def main():
     #Init Host Devices Status Module
     hostDevice = HostDeviceStatus()
 
-
-    def restartDevice(arg, messageMetadata):
-        processes[0].terminate()
+    #Config
+    config = Config()
+    
+    def restartDevice(processIndex, messageMetadata):
+        processes[int(processIndex)].terminate()
         time.sleep(2)
-        processes[0] = multiprocessing.Process(target=instantiateDevice, args=(deviceRegistar.getDevicesInstance()[0], videoProcessor, notification)) #child
-        processes[0].daemon = True
-        processes[0].start()
+        processes[int(processIndex)] = multiprocessing.Process(
+            target=instantiateDevice, 
+            args=(deviceRegistar.getDevicesInstance()[int(processIndex)], 
+            videoProcessor, 
+            notification))
+        processes[int(processIndex)].daemon = True
+        processes[int(processIndex)].start()
 
 
-    def getRunningProcesses(arg, messageMetadata):
-        print(processes)
+    def commandManager():
 
-    def getHostDeviceStatus(arg, messageMetadata):
-        print(hostDevice.brief())
-
-    def registerRemoteCommand():
-        commandManager = CommandManager()
-        commandManager.registerCommand("/restart", '', restartDevice)
-        commandManager.registerCommand("/getProcesses", '', getRunningProcesses)
-        commandManager.registerCommand("/hostDeviceStatus", '', getHostDeviceStatus)
-
+        #Connect to MQTT
         mqttService = MQTTService()
-        mqttService.run(commandManager.recieveMessage)
         
+        #Command Manager
+        commandManager = CommandManager()
+        commandManager.registerCommand("/restartDevice", '', restartDevice)
+        commandManager.registerCommand("/getProcesses", '', lambda arg, metadata: mqttService.publish(processes.__str__()))
+        commandManager.registerCommand("/hostDeviceStatus", '',  lambda arg, metadata: mqttService.publish(hostDevice.brief().__str__()))
+        commandManager.registerCommand("/getDeviceConfig", '', lambda arg, metadata: mqttService.publish(config.getDevicesConfig().__str__()))
+        commandManager.registerCommand("/getInstalledModels", '', lambda arg, metadata: mqttService.publish(modelRegistrar.getAllModelClass().__str__()))        
+        
+        mqttService.run(commandManager.receiveMessage)
 
     #Listening to Remote Command using MQTT Protocol
-    commandListener = threading.Thread(target=registerRemoteCommand)
+    commandListener = threading.Thread(target=commandManager)
     commandListener.start()
 
 
     for device in deviceRegistar.getDevicesInstance():
-        p = multiprocessing.Process(target=instantiateDevice, args=(device, videoProcessor, notification)) #child
+        p = multiprocessing.Process(target=instantiateDevice, args=(device, videoProcessor, notification))
         p.daemon = True
         p.start()
         processes.append(p)

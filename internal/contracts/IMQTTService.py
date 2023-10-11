@@ -8,7 +8,11 @@ class IMQTTService(ABC):
         pass
     
     @abstractmethod
-    def subscribe(self, client, callback):
+    def subscribe(self, callback):
+        pass
+
+    @abstractmethod
+    def publish(self, message: str):
         pass
 
     @abstractmethod

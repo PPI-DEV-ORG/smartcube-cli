@@ -7,11 +7,14 @@ class MQTTService:
     __broker = 'broker.emqx.io'
     __port = 1883
     __topic = "python/mqtt"
+    __topic_2 = "smartcube/receivecmd"
     # Generate a Client ID with the subscribe prefix.
     __client_id = f'subscribe-{random.randint(0, 100)}'
     # username = 'emqx'
     # password = 'public'
 
+
+    client: mqtt_client.Client
 
     def connectMqtt(self) -> mqtt_client.Client:
         def on_connect(client, userdata, flags, rc):
@@ -26,15 +29,23 @@ class MQTTService:
         client.connect(self.__broker, self.__port)
         return client
     
-    def subscribe(self, client: mqtt_client.Client, callback: Callable):
+    def subscribe(self, callback: Callable):
 
         def on_message(client, userdata, msg: mqtt_client.MQTTMessage):
             callback(msg.payload.decode())
 
-        client.subscribe(self.__topic)
-        client.on_message = on_message
+        self.client.subscribe(self.__topic)
+        self.client.on_message = on_message
+
+    def publish(self, msg):
+        result = self.client.publish(self.__topic_2, msg)
+        status = result[0]
+        if status == 0:
+            print(f"Send `{msg}` to topic `{self.__topic_2}`")
+        else:
+            print(f"Failed to send message to topic {self.__topic_2}")
 
     def run(self, callback: Callable):
-        client = self.connectMqtt()
-        self.subscribe(client=client, callback=callback)
-        client.loop_forever()
+        self.client = self.connectMqtt()
+        self.subscribe(callback=callback)
+        self.client.loop_forever()

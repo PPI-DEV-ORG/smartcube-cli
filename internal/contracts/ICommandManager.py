@@ -8,7 +8,7 @@ class MessageMetadata:
 class ICommandManager(ABC):
 
     @abstractmethod
-    def recieveMessage(self, message: str):
+    def receiveMessage(self, message: str):
         pass
 
     @abstractmethod

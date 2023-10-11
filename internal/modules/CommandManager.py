@@ -1,6 +1,5 @@
 from internal.contracts.ICommandManager import ICommandManager, MessageMetadata
 from typing import Callable, Any
-from paho.mqtt import client as mqtt_client
 import re
 
 class CommandManager(ICommandManager):
@@ -13,8 +12,7 @@ class CommandManager(ICommandManager):
     def __register_commands(self):
         self.registerCommand("/hello", '', self.hello)
 
-    def recieveMessage(self, message: str):
-
+    def receiveMessage(self, message: str):
         command = message.split()[0]
         argument = message.split()[1]
 
