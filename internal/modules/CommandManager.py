@@ -13,9 +13,14 @@ class CommandManager(ICommandManager):
         self.registerCommand("/hello", '', self.hello)
 
     def receiveMessage(self, message: str):
-        command = message.split()[0]
-        argument = message.split()[1]
-
+        
+        splittedMsg = message.split(" ")
+        command = splittedMsg[0]
+        if len(splittedMsg) < 2:
+            argument = ""
+        else:
+            argument = splittedMsg[1]
+        
         messageMetadata = MessageMetadata()
         messageMetadata.deviceId = "1"
         messageMetadata.userId = "1"
