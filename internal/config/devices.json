@@ -8,7 +8,8 @@
             "assigned_model_type": "objectDetection",
             "assigned_model_index": 0,
             "additional_info": {
-
+                "device_location": "",
+                "device_location_coordinate": ""
             }
         }
        

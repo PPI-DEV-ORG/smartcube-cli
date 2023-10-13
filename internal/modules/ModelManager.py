@@ -1,14 +1,21 @@
 from internal.contracts.IModelRegistrar import IModelRegistrar
 from internal.contracts.IAIModel import IAIModel
+from typing import Any
 
 class ModelManager:
     
-    modelRegistrar: IModelRegistrar
+    __modelRegistrar: IModelRegistrar
 
     def __init__(self, modelRegistrar: IModelRegistrar) -> None:
-        self.modelRegistrar = modelRegistrar
+        self.__modelRegistrar = modelRegistrar
 
     def getRegisteredModel(self) -> list[IAIModel]:
-        return self.modelRegistrar.getAllModelClass()
+        return self.__modelRegistrar.getAllModelClass()
 
+    def getRegisteredModelsMetadata(self) -> list[dict[str, Any]]:
+        modelsMetadata: list[dict[str, Any]] = []
 
+        for i in range(len(self.__modelRegistrar.getAllModelClass())):
+            modelsMetadata.append(self.__modelRegistrar.getAllModelClass()[i].getModelMetadata())
+
+        return modelsMetadata

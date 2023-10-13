@@ -3,6 +3,7 @@ from internal.contracts.IVideoProcessor import IVideoProcessor
 from tensorflow.python.keras.utils.data_utils import get_file
 from collections.abc import Callable
 import time, os, tensorflow as tf
+from typing import Any
 
 np.random.seed(123)
 
@@ -20,11 +21,20 @@ class ObjectDetectorModel(IObjectDetectorModel):
         self.__downloadModel("http://download.tensorflow.org/models/object_detection/tf2/20200711/ssd_mobilenet_v2_320x320_coco17_tpu-8.tar.gz")
         self.__loadTensorModel()
 
-    def getModelType(self) -> str:
+    @staticmethod
+    def getModelType() -> str:
         return "objectDetection"
     
     def getModelVersion(self) -> str:
         return "v1.0.0"
+    
+    @staticmethod
+    def getModelMetadata() -> dict[str, Any]:
+        return {
+            "model_name": "ssd_mobilenet_v2",
+            "version": "v2.0.0",
+            "smcb_wrapper_version": "v1.0.0",
+        }
 
     def inferenceFrame(self, frame: np.ndarray, iou_threshold: float = 0.5,
                  score_threshold: float = 0.5,

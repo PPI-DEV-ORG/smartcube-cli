@@ -20,7 +20,7 @@ class Notification(INotification):
         # Cek apakah sudah 30 detik sejak pemanggilan terakhir
         if currentTime - self.lastDetectionTime >= self.breakTimeWhenObjectDetected:
 
-            desc = f"Deteksi objek: {classLabel} dengan kepercayaan {confidence}%"
+            desc = f"Object {classLabel} terdeteksi dengan kepercayaan {confidence}% pada pukul {currentTime}"
 
             print(desc)
 
@@ -48,6 +48,6 @@ class Notification(INotification):
                 print("Notification sent successfully")
             else:
                 print(f"Failed to send notification. Status code: {response.status_code}")
-        except:
-            print("Error occured")
+        except Exception as e:
+            print("Error occured", e)
    

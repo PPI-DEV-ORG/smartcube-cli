@@ -5,6 +5,8 @@ from internal.contracts.IDevice import Device
 from internal.contracts.IAIModel import IAIModel
 from internal.modules.USBCamera import USBCamera
 from internal.modules.IPCamera import IPCamera
+import internal.constants.device as device_constant
+import internal.constants.model as model_constant
 import os, json
 
 class DeviceRegistrar(IDeviceRegistrar):
@@ -21,19 +23,20 @@ class DeviceRegistrar(IDeviceRegistrar):
 
     def loadCamera(self, modelRegistrar: IModelRegistrar, videoProcessor: IVideoProcessor) -> None:
         for device_config in self.__devices_config:
-            #instatiate camera device usb
-            if(device_config["source_type"] == "usb"):
-                self.__devices_instance.append({
-                    "device_instance": USBCamera(device_config["usb_id"], device_config["additional_info"], videoProcessor),
-                    "assigned_model_class": modelRegistrar.getModelClass(int(device_config['assigned_model_index']))
-                })
-                
-            #instatiate camera device rtsp
-            if(device_config["source_type"] == "rtsp"):
-                self.__devices_instance.append({
-                    "device_instance": IPCamera(device_config["rtsp_address"], device_config["additional_info"], videoProcessor),
-                    "assigned_model_class": modelRegistrar.getModelClass(int(device_config['assigned_model_index']))
-                })
+            if(modelRegistrar.getModelClass(int(device_config['assigned_model_index'])).getModelType() == device_config["assigned_model_type"]):
+                #instatiate camera device usb
+                if(device_config["source_type"] == device_constant.USB_CAMERA_DEVICE):
+                    self.__devices_instance.append({
+                        "device_instance": USBCamera(device_config["usb_id"], device_config["additional_info"], videoProcessor),
+                        "assigned_model_class": modelRegistrar.getModelClass(int(device_config['assigned_model_index']))
+                    })
+
+                #instatiate camera device rtsp
+                if(device_config["source_type"] == device_constant.RTSP_CAMERA_DEVICE):
+                    self.__devices_instance.append({
+                        "device_instance": IPCamera(device_config["rtsp_address"], device_config["additional_info"], videoProcessor),
+                        "assigned_model_class": modelRegistrar.getModelClass(int(device_config['assigned_model_index']))
+                    })
 
     def getDevicesInstance(self) -> list[dict[str, Device | IAIModel]]:
         return self.__devices_instance
