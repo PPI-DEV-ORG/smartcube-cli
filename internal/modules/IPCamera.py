@@ -1,5 +1,4 @@
 from collections.abc import Callable
-
 from internal.contracts.IDevice import CameraDevice
 from internal.contracts.IVideoProcessor import *
 

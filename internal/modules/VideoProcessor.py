@@ -1,5 +1,4 @@
 import cv2
-
 from internal.contracts.IVideoProcessor import *
 from PIL import Image
 

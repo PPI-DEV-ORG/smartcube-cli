@@ -4,7 +4,7 @@ from typing import Callable
 class IMQTTService(ABC):
 
     @abstractmethod
-    def connectMqtt(self):
+    def connect(self):
         pass
     
     @abstractmethod

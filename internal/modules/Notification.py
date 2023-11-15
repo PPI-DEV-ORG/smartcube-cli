@@ -1,53 +1,56 @@
-import time, asyncio, random, string, requests
+import time
+import asyncio
+import random
+import string
 import numpy as np
 from internal.contracts.IVideoProcessor import IVideoProcessor
 from internal.contracts.INotification import INotification
+from internal.contracts.IHttpClient import IHttpClient
 
 class Notification(INotification):
-    
-    BASE_API_URL = "http://localhost:8080"
 
-    lastDetectionTime = time.time()
-    breakTimeWhenObjectDetected = 15
-    videoProcessor: IVideoProcessor
+    __videoProcessor: IVideoProcessor
+    __httpClient: IHttpClient
 
-    def __init__(self, videoProcessor: IVideoProcessor) -> None:
-        self.videoProcessor = videoProcessor
+    __lastDetectionTime = time.time()
+    __breakTimeWhenObjectDetected = 15
+
+    def __init__(self, videoProcessor: IVideoProcessor, httpClient: IHttpClient) -> None:
+        self.__videoProcessor = videoProcessor
+        self.__httpClient = httpClient
 
     def handleOnObjectDetected(self, classLabel, confidence, frame):
         currentTime = time.time()
 
-        # Cek apakah sudah 30 detik sejak pemanggilan terakhir
-        if currentTime - self.lastDetectionTime >= self.breakTimeWhenObjectDetected:
+        if currentTime - self.__lastDetectionTime >= self.__breakTimeWhenObjectDetected:
 
             desc = f"Object {classLabel} terdeteksi dengan kepercayaan {confidence}% pada pukul {currentTime}"
 
-            print(desc)
-
-            # send notification
             asyncio.run(self.sendNotification(frame, classLabel, desc))
 
-            # Perbarui waktu terakhir callback dipanggil
-            self.lastDetectionTime = currentTime
+            self.__lastDetectionTime = currentTime
 
     async def sendNotification(self, frame: np.ndarray, classLabel: str, description):
-    
+
         data = {
             "title": f"Telah terdeteksi object {classLabel}",
             "description": description,
         }
-
         fileName = ''.join(random.choices(string.ascii_uppercase + string.digits, k=12)) + '.jpeg'
-
-        files = {'image': (fileName, self.videoProcessor.convertFrameToImage(frame), 'image/jpeg')}
+        files = {'image': (fileName, self.__videoProcessor.convertFrameToImage(frame), 'image/jpeg')}
 
         try:
-            response = requests.post(self.BASE_API_URL + "/notification", data=data, files=files)
+            response = self.__httpClient.getSession().post(
+                url=f"{self.__httpClient.baseUrl()}/notification",
+                data=data,
+                files=files,
+            )
 
             if response.status_code == 200:
                 print("Notification sent successfully")
             else:
-                print(f"Failed to send notification. Status code: {response.status_code}")
+                print(
+                    f"Failed to send notification. Status code: {response.status_code}")
+                
         except Exception as e:
-            print("Error occured", e)
-   
+            print("Send Notification error occured", e)

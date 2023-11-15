@@ -64,7 +64,7 @@ class ObjectDetectorFPNLite(IObjectDetectorModel):
 
         # Initialize the object detection model
         base_options = core.BaseOptions(file_name=self.__model_path, use_coral=False, num_threads=1)
-        detection_options = processor.DetectionOptions(max_results=50, score_threshold=0.5)
+        detection_options = processor.DetectionOptions(max_results=50, score_threshold=50)
         options = vision.ObjectDetectorOptions(base_options=base_options, detection_options=detection_options)
         self.__detector = vision.ObjectDetector.create_from_options(options)
         

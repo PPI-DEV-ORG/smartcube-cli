@@ -5,3 +5,6 @@ __pycache__
 bin
 pretrained_models/*
 !pretrained_models/.gitkeep
+
+mqtt-ssl.crt
+.env

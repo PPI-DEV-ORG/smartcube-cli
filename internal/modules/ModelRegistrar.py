@@ -1,6 +1,5 @@
 from internal.contracts.IModelRegistrar import IModelRegistrar
 from internal.contracts.IAIModel import IAIModel
-
 import os, importlib
 
 class ModelRegistrar(IModelRegistrar):
@@ -31,7 +30,7 @@ class ModelRegistrar(IModelRegistrar):
     
     def getModelClass(self, index) -> IAIModel:
         return self.__imported_models[index]
-    
+        
 
     def getAllModelClass(self) -> list[IAIModel]:
         return self.__imported_models
