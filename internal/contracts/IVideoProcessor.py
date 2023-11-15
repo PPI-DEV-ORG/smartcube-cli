@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 import io
 import typing
-
 import numpy as np
 
 class IVideoProcessor(ABC): #Interfaces

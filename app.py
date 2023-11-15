@@ -15,10 +15,10 @@ import threading
 import multiprocessing
 import time
 import json
-from dotenv import dotenv_values, load_dotenv
+import os
+from dotenv import load_dotenv
 
-if load_dotenv() == False:
-    print(".env not found")
+load_dotenv()
 
 def instantiateDevice(device: dict[str, CameraDevice], videoProcessor: VideoProcessor, notificationService: Notification):
     model: IObjectDetectorModel = device["assigned_model_class"](videoProcessor)  # type: ignore
@@ -31,7 +31,7 @@ def main():
     processes: list[multiprocessing.Process] = []
 
     # Init pre configured http client
-    httpClient = HttpClient()
+    httpClient: IHttpClient = HttpClient()
 
     # Init Video Processor
     videoProcessor = VideoProcessor()

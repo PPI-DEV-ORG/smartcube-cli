@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from typing import Callable
-
 import numpy as np
 
 class Device(ABC): #Interfaces
