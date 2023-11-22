@@ -15,7 +15,7 @@ import threading
 import multiprocessing
 import time
 import json
-import os
+import logging
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -61,32 +61,51 @@ def main():
 
     # Restart Device Process
     def restartDevice(processIndex, messageMetadata):
-        processes[int(processIndex)].terminate()
-        time.sleep(1)
-        processes[int(processIndex)] = multiprocessing.Process(
-            target=instantiateDevice,
-            args=(deviceRegistar.getDevicesInstance()[int(processIndex)],
-                  videoProcessor,
-                  notificationService))
-        processes[int(processIndex)].daemon = True
-        processes[int(processIndex)].start()
+        logging.info("restarting edge device configuration")
+        try:
+            processes[int(processIndex)].terminate()
+            time.sleep(1)
+            processes[int(processIndex)] = multiprocessing.Process(
+                target=instantiateDevice,
+                args=(deviceRegistar.getDevicesInstance()[int(processIndex)],
+                    videoProcessor,
+                    notificationService))
+            processes[int(processIndex)].daemon = True
+            processes[int(processIndex)].start()
+
+            #notify user
+            mqttService.publish("device config restarted")
+            
+        except Exception as e:
+            logging.error(e)
+
+            #notify user
+            mqttService.publish(f"restarting device config failed: {e}")
 
     # Start Device Process
     def startDevice(processIndex, messageMetadata):
         # print(deviceRegistar.getDevicesInstance())
-        p = multiprocessing.Process(
-            target=instantiateDevice,
-            args=(deviceRegistar.getDevicesInstance()[int(processIndex)],
-                  videoProcessor,
-                  notificationService))
-        p.daemon = True
-        p.start()
+        try:
+            logging.info("starting edge device configuration")
+            p = multiprocessing.Process(
+                target=instantiateDevice,
+                args=(deviceRegistar.getDevicesInstance()[int(processIndex)],
+                    videoProcessor,
+                    notificationService))
+            p.daemon = True
+            p.start()
 
-        processes.append(p)
+            processes.append(p)
+            mqttService.publish("device config started")
+
+        except Exception as e:
+            logging.error(e)
+            #notify user
+            mqttService.publish(f"starting device config failed: {e}")
 
     def syncEdgeConfig(arg, metadata):
         try:
-            response = httpClient.getSession.get(f"{httpClient.baseUrl()}/edge-device-config")
+            response = httpClient.getSession().get(f"{httpClient.baseUrl()}/edge-device-config")
             if response.status_code == 200:
                 
                 #Rewrite devices.json to sync configuration between backend to edge config
@@ -94,16 +113,25 @@ def main():
                 with open('internal/config/devices.json', "w") as outfile:
                     outfile.write(json.dumps(devicesConfig, indent=4))
 
-                print("Edge config synchronized.")
+                logging.info("edge config synchronized")
 
                 #Reload Device configuration
                 deviceRegistar.reloadCamera(modelRegistrar=modelRegistrar, videoProcessor=videoProcessor)
 
+                #notify user
+                mqttService.publish(f"edge config synchronized")
+
             else:
-                print(f"Failed to fetch edge devices config. Status code: {response.status_code}")
+                logging.info(f"failed to fetch edge devices config. status code: {response.status_code}")
+
+                #notify user
+                mqttService.publish(f"edge server failed to fetch edge devices config. status code: {response.status_code}")
 
         except json.JSONDecodeError as e:
-            print(f"Error synchronize edge config: {e}")
+            logging.info(f"error synchronize edge config: {e}")
+
+            #notify user
+            mqttService.publish(f"error synchronize edge config: {e}")
 
     # Prepare command manager
     def commandManager():

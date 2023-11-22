@@ -41,16 +41,16 @@ class MQTTService:
         def on_message(client, userdata, msg: mqtt_client.MQTTMessage):
             callback(msg.payload.decode())
 
-        self.__client.subscribe(self.__sub_topic)
+        self.__client.subscribe(self.__pub_topic)
         self.__client.on_message = on_message
 
     def publish(self, msg):
-        result = self.__client.publish(self.__pub_topic, msg)
+        result = self.__client.publish(self.__sub_topic, msg)
         status = result[0]
         if status == 0:
-            print(f"Send `{msg}` to topic `{self.__pub_topic}`")
+            print(f"Send `{msg}` to topic `{self.__sub_topic}`")
         else:
-            print(f"Failed to send message to topic {self.__pub_topic}")
+            print(f"Failed to send message to topic {self.__sub_topic}")
 
     def run(self, callback: Callable):
         self.__client = self.connect()
