@@ -6,13 +6,15 @@ class VideoProcessor(IVideoProcessor):
 
     def streamVideoFrameRTSP(self, rtsp: str, callback: Callable[[np.ndarray], None]):
         cap = cv2.VideoCapture(rtsp)
+        ct = 0
         while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
+            ct += 1
+            ret = cap.grab()
+            if ct % 5 == 0: # skip some frames
+                ret, frame = cap.retrieve()
+                if not ret: break
+                callback(frame)
 
-            callback(frame)
-                
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 

@@ -19,26 +19,22 @@ class Notification(INotification):
         self.__videoProcessor = videoProcessor
         self.__httpClient = httpClient
 
-    def handleOnObjectDetected(self, classLabel, confidence, frame):
+    def handleOnObjectDetected(self, deviceId: int, classLabel: str, confidence: int, frame: np.ndarray):
         currentTime = time.time()
-
         if currentTime - self.__lastDetectionTime >= self.__breakTimeWhenObjectDetected:
+            data = {
+                "device_id": deviceId,
+                "title": f"Telah terdeteksi object {classLabel}",
+                "description": f"Object {classLabel} terdeteksi dengan kepercayaan {confidence}% pada pukul {currentTime}",
+            }
+            fileName = ''.join(random.choices(string.ascii_uppercase + string.digits, k=12)) + '.jpeg'
+            files = {'image': (fileName, self.__videoProcessor.convertFrameToImage(frame), 'image/jpeg')}
 
-            desc = f"Object {classLabel} terdeteksi dengan kepercayaan {confidence}% pada pukul {currentTime}"
-
-            asyncio.run(self.sendNotification(frame, classLabel, desc))
+            asyncio.run(self.storeNotificationWithFile(data=data, files=files))
 
             self.__lastDetectionTime = currentTime
 
-    async def sendNotification(self, frame: np.ndarray, classLabel: str, description):
-
-        data = {
-            "title": f"Telah terdeteksi object {classLabel}",
-            "description": description,
-        }
-        fileName = ''.join(random.choices(string.ascii_uppercase + string.digits, k=12)) + '.jpeg'
-        files = {'image': (fileName, self.__videoProcessor.convertFrameToImage(frame), 'image/jpeg')}
-
+    async def storeNotificationWithFile(self, data: dict, files: dict):
         try:
             response = self.__httpClient.getSession().post(
                 url=f"{self.__httpClient.baseUrl()}/notification",
@@ -47,10 +43,10 @@ class Notification(INotification):
             )
 
             if response.status_code == 200:
-                print("Notification sent successfully")
+                print("notification sent successfully")
             else:
                 print(
-                    f"Failed to send notification. Status code: {response.status_code}")
+                    f"failed to send notification. Status code: {response.status_code}")
                 
         except Exception as e:
-            print("Send Notification error occured", e)
+            print("send Notification error occured", e)

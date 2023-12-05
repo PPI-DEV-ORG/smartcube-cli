@@ -1,12 +1,12 @@
 {
     "devices": [
         {
-            "type": "camera",
-            "usb_id": "/dev/video0",
-            "rtsp_address": "",
-            "source_type": "usb",
-            "assigned_model_type": "objectDetection",
-            "assigned_model_index": 1,
+            "device_id": 24,
+            "type": "sensor",
+            "source_address": "https://mocki.io/v1/26c0651f-b934-4dca-b381-eeae9c897337",
+            "source_type": "http",
+            "assigned_model_type": "dataAnalytic",
+            "assigned_model_index": 0,
             "additional_info": ""
         }
     ]

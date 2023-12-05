@@ -7,7 +7,7 @@ from typing import Any
 
 np.random.seed(123)
 
-class ObjectDetectorModel(IObjectDetectorModel):
+class ModelLoaderSSDMobileNet_V2(IObjectDetectorModel):
 
     def __init__(self, videoProcessor: IVideoProcessor,
                  ):
@@ -74,7 +74,7 @@ class ObjectDetectorModel(IObjectDetectorModel):
         os.makedirs(self.cacheDir, exist_ok=True)
 
         get_file(fname=fileName, origin=modelUrl, cache_dir=self.cacheDir,
-                 cache_subdir="checkpoints", extract=True)
+                 cache_subdir="", extract=True)
 
     def __readClasses(self, classesFilePath):
         with open(classesFilePath, 'r') as f:
@@ -83,7 +83,7 @@ class ObjectDetectorModel(IObjectDetectorModel):
 
     def __loadTensorModel(self):
         tf.keras.backend.clear_session()
-        self.model = tf.saved_model.load(os.path.join(self.cacheDir, "checkpoints", self.modelName, "saved_model"))
+        self.model = tf.saved_model.load(os.path.join(self.cacheDir, self.modelName, "saved_model"))
 
         print("Model " + self.modelName + " loaded successfully...")
 

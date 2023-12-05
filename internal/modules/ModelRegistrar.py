@@ -6,7 +6,7 @@ class ModelRegistrar(IModelRegistrar):
 
     __imported_models: list = []
     __modules_directory = ""
-    __models_path = "registered_models"
+    __models_path = "model_wrappers"
     
     def __init__(self) -> None:
         super().__init__()
