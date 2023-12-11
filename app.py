@@ -35,20 +35,22 @@ def instantiateCamera(device: dict[str, CameraDevice], videoProcessor: VideoProc
     #Stream Frame
     device["device_instance"].streamVideoFrame(lambda frame: inferFrame(frame))
     
-def instantiateSensor(device: dict[str, SensorDevice], httpClient: IHttpClient, x):
+def instantiateSensor(device: dict[str, SensorDevice], httpClient: IHttpClient, notificationService: Notification, x):
     model: ISensorModel = device["assigned_model_class"]()  # type: ignore
-   
+    
+    def onThresholdExceeded(riskLevel: str):
+        notificationService.onThresholdExceeded(deviceId=device["device_instance"].getDeviceId(), riskLevel=riskLevel)
+
     #Event: on infered data
-    def onInfered(*res):
+    def onInfered(inferedPayload: dict):
         payload = {
             "data": [
                 {
                     "edge_server_id": 0,
                     "device_id": device["device_instance"].getDeviceId(),
-                    "unit_measure": "celcius",
-                    "data_measured": 30,
-                    "inference_label_status": "low",
-                    "captured_at": "2023-12-05"
+                    "data_measured": inferedPayload["dataMeasured"],
+                    "inference_label_status": inferedPayload["inferenceLabelStatus"],
+                    "captured_at": inferedPayload["capturedAt"]
                 },
             ]
         }
@@ -69,7 +71,7 @@ def instantiateSensor(device: dict[str, SensorDevice], httpClient: IHttpClient, 
         except Exception as e:
             print("sending sensor data throw an exception", e)
         
-    device["device_instance"].streamData(lambda data: model.inferData(data, onInfered, print))
+    device["device_instance"].streamData(lambda data: model.inferData(data=data, onInfered=onInfered, onThresholdExceeded=onThresholdExceeded))
 
 #All dependencies are bootstrapped inside this function
 def main():
@@ -214,7 +216,7 @@ def main():
             deviceProcesses.append(p)
             
         elif device['device_instance'].type() == 'sensor': # type: ignore
-            t = threading.Thread(target=instantiateSensor, args=(device, httpClient, 0))
+            t = threading.Thread(target=instantiateSensor, args=(device, httpClient, notificationService, 0))
             t.daemon = True
             t.start()
             deviceThreads.append(t)

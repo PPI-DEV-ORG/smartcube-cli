@@ -3,7 +3,16 @@
         {
             "device_id": 24,
             "type": "sensor",
-            "source_address": "https://mocki.io/v1/26c0651f-b934-4dca-b381-eeae9c897337",
+            "source_address": "https://mocki.io/v1/eb6a5bd9-d952-42c6-83df-ca2d5cc8fe0d",
+            "source_type": "http",
+            "assigned_model_type": "dataAnalytic",
+            "assigned_model_index": 0,
+            "additional_info": ""
+        },
+        {
+            "device_id": 24,
+            "type": "sensor",
+            "source_address": "https://mocki.io/v1/50323f02-f78d-48c4-a54a-f801b969f1a6",
             "source_type": "http",
             "assigned_model_type": "dataAnalytic",
             "assigned_model_index": 0,

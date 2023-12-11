@@ -33,7 +33,7 @@ class ModelLoaderSSDMobileNet_FPNLite_V2(IObjectDetectorModel):
         return "objectDetection"
     
     def getModelVersion(self) -> str:
-        return "fpnlite@v1.0.0"
+        return "firesmoke_detector@v1.0.0"
     
     @staticmethod
     def getModelMetadata() -> dict[str, Any]:
@@ -71,13 +71,6 @@ class ModelLoaderSSDMobileNet_FPNLite_V2(IObjectDetectorModel):
         
 
     def __detectObject(self, frame: np.ndarray) -> np.ndarray:
-
-        # image = cv2.flip(image, 1)
-
-        # # Convert the image from BGR to RGB as required by the TFLite model.
-        # rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        
-
         # Create a TensorImage object from the RGB image.
         input_tensor = vision.TensorImage.create_from_array(frame)
 
