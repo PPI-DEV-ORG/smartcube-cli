@@ -5,3 +5,5 @@ Pillow
 asyncio
 psutil
 python-dotenv
+skfuzzy
+paho-mqtt

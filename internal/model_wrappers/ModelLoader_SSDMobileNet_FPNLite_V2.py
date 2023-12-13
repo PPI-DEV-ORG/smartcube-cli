@@ -14,7 +14,7 @@ _FONT_SIZE = 1
 _FONT_THICKNESS = 1
 _TEXT_COLOR = (0, 0, 255)  # red
 
-class ModelLoaderSSDMobileNet_FPNLite_V2(IObjectDetectorModel):
+class ModelLoader_SSDMobileNet_FPNLite_V2(IObjectDetectorModel):
 
     __detector: vision.ObjectDetector
     __videoProcessor: IVideoProcessor

@@ -7,7 +7,7 @@ from typing import Any
 
 np.random.seed(123)
 
-class ModelLoaderSSDMobileNet_V2(IObjectDetectorModel):
+class ModelLoader_SSDMobileNet_V2(IObjectDetectorModel):
 
     def __init__(self, videoProcessor: IVideoProcessor,
                  ):
