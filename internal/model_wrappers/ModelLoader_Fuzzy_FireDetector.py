@@ -27,26 +27,25 @@ class ModelLoader_Fuzzy_FireDetector(ISensorModel):
         }
 
     def inferData(self, data: Any, onInfered: Callable[[Any], None], onThresholdExceeded: Callable[[Any], None]):
-
-        temperatureData = data["data_measured"][0]["data"]
-        humidityData = data["data_measured"][1]["data"]
-        gasData = data["data_measured"][2]["data"]
+        temperatureData = int(data["data_measured"][0]["data"])
+        humidityData = int(data["data_measured"][1]["data"])
+        gasData = int(data["data_measured"][3]["data"])
 
         dataMeasured = [
             {
                 "sensor_type": data["data_measured"][0]["sensor_type"],
-                "data":  data["data_measured"][0]["data"],
+                "data": temperatureData,
                 "unit_measure":  data["data_measured"][0]["unit_measure"]
             },
             {
                 "sensor_type": data["data_measured"][1]["sensor_type"],
-                "data":  data["data_measured"][1]["data"],
+                "data":  humidityData,
                 "unit_measure":  data["data_measured"][1]["unit_measure"]
             },
             {
-                "sensor_type": data["data_measured"][2]["sensor_type"],
-                "data":  data["data_measured"][2]["data"],
-                "unit_measure":  data["data_measured"][2]["unit_measure"]
+                "sensor_type": data["data_measured"][3]["sensor_type"],
+                "data": gasData,
+                "unit_measure":  data["data_measured"][3]["unit_measure"]
             }
         ]
 
@@ -102,11 +101,11 @@ class ModelLoader_Fuzzy_FireDetector(ISensorModel):
         humidity_var['high'] = fuzz.trimf(humidity_var.universe, [60, 80, 100])
 
         gas_resistance_var['low'] = fuzz.trimf(
-            gas_resistance_var.universe, [0, 20000, 40000])
+            gas_resistance_var.universe, [0, 2, 4])
         gas_resistance_var['medium'] = fuzz.trimf(
-            gas_resistance_var.universe, [30000, 50000, 70000])
+            gas_resistance_var.universe, [3, 5, 7])
         gas_resistance_var['high'] = fuzz.trimf(
-            gas_resistance_var.universe, [60000, 80000, 100000])
+            gas_resistance_var.universe, [6, 8, 10])
 
         fire_likelihood['low'] = fuzz.trimf(
             fire_likelihood.universe, [0, 20, 40])

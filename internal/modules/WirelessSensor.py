@@ -30,4 +30,4 @@ class WirelessSensor(SensorDevice):
             except Exception as e:
                 print(f"fetch sensor data error: {e}")
                 
-            time.sleep(10)
+            time.sleep(60)

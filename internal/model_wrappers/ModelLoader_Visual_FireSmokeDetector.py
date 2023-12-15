@@ -47,7 +47,7 @@ class ModelLoader_Visual_FireSmokeDetector(IObjectDetectorModel):
         self, 
         frame: np.ndarray, 
         iou_threshold: float = 0.5,
-        score_threshold: float = 0.5,
+        score_threshold: float = 0.7,
         confidence: int = 50,
         max_output_size: int = 50,
         onDetected: Callable[[str, int, np.ndarray], None] = lambda classLabel, confidence, frame: None
@@ -64,6 +64,7 @@ class ModelLoader_Visual_FireSmokeDetector(IObjectDetectorModel):
     def __loadModel(self):
 
         # Initialize the object detection model
+        print(self.__score_threshold)
         base_options = core.BaseOptions(file_name=self.__model_path, use_coral=False, num_threads=1)
         detection_options = processor.DetectionOptions(max_results=self.__max_output, score_threshold=self.__score_threshold)
         options = vision.ObjectDetectorOptions(base_options=base_options, detection_options=detection_options)

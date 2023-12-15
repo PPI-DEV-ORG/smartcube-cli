@@ -10,8 +10,6 @@ import numpy as np
 
 _MARGIN = 15  # pixels
 _ROW_SIZE = 10  # pixels
-_FONT_SIZE = 1
-_FONT_THICKNESS = 1
 _TEXT_COLOR = (0, 0, 255)  # red
 
 class ModelLoader_SSDMobileNet_FPNLite_V2(IObjectDetectorModel):
@@ -47,7 +45,7 @@ class ModelLoader_SSDMobileNet_FPNLite_V2(IObjectDetectorModel):
         self, 
         frame: np.ndarray, 
         iou_threshold: float = 0.5,
-        score_threshold: float = 0.5,
+        score_threshold: float = 0.9,
         confidence: int = 50,
         max_output_size: int = 50,
         onDetected: Callable[[str, int, np.ndarray], None] = lambda classLabel, confidence, frame: None
@@ -65,7 +63,7 @@ class ModelLoader_SSDMobileNet_FPNLite_V2(IObjectDetectorModel):
 
         # Initialize the object detection model
         base_options = core.BaseOptions(file_name=self.__model_path, use_coral=False, num_threads=1)
-        detection_options = processor.DetectionOptions(max_results=self.__max_output, score_threshold=self.__score_threshold)
+        detection_options = processor.DetectionOptions(max_results=50, score_threshold=0.8)
         options = vision.ObjectDetectorOptions(base_options=base_options, detection_options=detection_options)
         self.__detector = vision.ObjectDetector.create_from_options(options)
         

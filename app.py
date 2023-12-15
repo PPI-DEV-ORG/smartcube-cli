@@ -30,7 +30,7 @@ def instantiateCamera(device: dict[str, CameraDevice], videoProcessor: VideoProc
 
     #Additional wrapper function to be able accessing other depedencies
     def inferFrame(frame):
-       videoProcessor.presentInWindow(model.inferenceFrame(frame, 0.5, 0.5, 50, 50, onObjectDetected))
+       videoProcessor.presentInWindow(model.inferenceFrame(frame, 0.7, 0.85, 50, 50, onObjectDetected))
     
     #Stream Frame
     device["device_instance"].streamVideoFrame(lambda frame: inferFrame(frame))
@@ -89,7 +89,8 @@ def main():
     # Init Registered Models
     modelRegistrar = ModelRegistrar()
     modelRegistrar.load()
-
+    print(modelRegistrar.getAllModelClass())
+    
     # Init Model Manager
     modelManager = ModelManager(modelRegistrar=modelRegistrar)
 
