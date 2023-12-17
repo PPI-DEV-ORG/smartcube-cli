@@ -29,7 +29,6 @@ class Notification(INotification):
                 "description": f"Object {classLabel} terdeteksi dengan kepercayaan {confidence}% pada pukul {getTimeNow(format='%Y-%m-%d')}",
                 "device_type": "camera",
                 "object_label": classLabel,
-                "risk_level": "test"
             }
             fileName = ''.join(random.choices(string.ascii_uppercase + string.digits, k=12)) + '.jpeg'
             files = {'image': (fileName, self.__videoProcessor.convertFrameToImage(frame), 'image/jpeg')}

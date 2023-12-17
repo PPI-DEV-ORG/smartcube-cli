@@ -12,7 +12,6 @@ from internal.contracts.IDevice import CameraDevice, SensorDevice
 from internal.contracts.IObjectDetectorModel import IObjectDetectorModel
 from internal.contracts.ISensorModel import ISensorModel
 from internal.contracts.IHttpClient import IHttpClient
-from internal.helper.helper import generateRandomString
 import threading
 import multiprocessing
 import time
@@ -31,7 +30,7 @@ def instantiateCamera(device: dict[str, CameraDevice], videoProcessor: VideoProc
 
     #Additional wrapper function to be able accessing other depedencies
     def inferFrame(frame):
-       videoProcessor.presentInWindow(model.inferenceFrame(frame, 0.7, 0.6, 50, 50, onObjectDetected))
+       videoProcessor.presentInWindow(model.inferenceFrame(frame, 0.7, 0.85, 50, 50, onObjectDetected))
     
     #Stream Frame
     device["device_instance"].streamVideoFrame(lambda frame: inferFrame(frame))
@@ -80,7 +79,6 @@ def main():
     # Device process list
     deviceProcesses: list[multiprocessing.Process] = []
     deviceThreads: list[threading.Thread] = []
-    deviceProcessesIndex: list[dict] = []
 
     # Init pre configured http client
     httpClient: IHttpClient = HttpClient()
@@ -91,21 +89,15 @@ def main():
     # Init Registered Models
     modelRegistrar = ModelRegistrar()
     modelRegistrar.load()
+    print(modelRegistrar.getAllModelClass())
     
     # Init Model Manager
-    print("\nInstalled Models:")
     modelManager = ModelManager(modelRegistrar=modelRegistrar)
-    for i in range(0, len(modelManager.getRegisteredModelsMetadata())):
-        print(f"{i+1}.", modelManager.getRegisteredModelsMetadata()[i])
 
     # Init All Devices In config/devices.json
-    print("\nDevices Config:")
     deviceRegistar = DeviceRegistrar()
     deviceRegistar.loadDevices(modelRegistrar=modelRegistrar, videoProcessor=videoProcessor, httpClient=httpClient)
-    for i in range(0, len(deviceRegistar.getDevicesInstance())):
-        print(f"{i+1}.", deviceRegistar.getDevicesInstance()[i])
-    print("\n")
-    
+
     # Init Notification Module
     notificationService = Notification(videoProcessor=videoProcessor, httpClient=httpClient)
 
@@ -197,13 +189,12 @@ def main():
         hostDeviceStatusData = json.dumps({'command': '/hostDeviceStatus', 'data': hostDevice.brief()}, indent=4)
         deviceConfigData = json.dumps({'command': '/getDeviceConfig', 'data': config.getDevicesConfig()}, indent=4)
         installedModelsData = json.dumps({'command': '/getInstalledModels', 'data': modelManager.getRegisteredModelsMetadata()}, indent=4)
-        deviceProcessesIndexData = json.dumps({'command': '/getProcesses', 'data': deviceProcessesIndex}, indent=4)
 
         # Command Manager
         commandManager = CommandManager()
         commandManager.registerCommand("/restartDevice", '', restartDevice)
         commandManager.registerCommand("/startDevice", '', startDevice)
-        commandManager.registerCommand("/getProcesses", '', lambda arg, metadata: mqttService.publish(deviceProcessesIndexData))
+        commandManager.registerCommand("/getProcesses", '', lambda arg, metadata: mqttService.publish(deviceProcesses.__str__()))
         commandManager.registerCommand("/hostDeviceStatus", '', lambda arg, metadata: mqttService.publish(hostDeviceStatusData))
         commandManager.registerCommand("/getDeviceConfig", '', lambda arg, metadata: mqttService.publish(deviceConfigData))
         commandManager.registerCommand("/getInstalledModels", '', lambda arg, metadata: mqttService.publish(installedModelsData))
@@ -217,33 +208,19 @@ def main():
     commandListener.start()
 
     # Instantiate in multi processes & threads
-    processCounter = 0
-    threadCounter = 0
     for device in deviceRegistar.getDevicesInstance():
         if device['device_instance'].type() == 'camera': # type: ignore
-            p = multiprocessing.Process(target=instantiateCamera, 
-                args=(device, videoProcessor, notificationService))
+            p = multiprocessing.Process(target=instantiateCamera, args=(
+                device, videoProcessor, notificationService))
             p.daemon = True
             p.start()
             deviceProcesses.append(p)
-            deviceProcessesIndex.append({
-                "device_id": device['device_instance'].getDeviceId(), # type: ignore
-                "type": "camera",
-                "process_index": processCounter
-            })
-            processCounter += 1
-
+            
         elif device['device_instance'].type() == 'sensor': # type: ignore
             t = threading.Thread(target=instantiateSensor, args=(device, httpClient, notificationService, 0))
             t.daemon = True
             t.start()
             deviceThreads.append(t)
-            deviceProcessesIndex.append({
-                "device_id": device['device_instance'].getDeviceId(), # type: ignore
-                "type": "sensor",
-                "process_index": threadCounter
-            })
-            threadCounter += 1
 
     for p in deviceProcesses:
         p.join()
