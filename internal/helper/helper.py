@@ -1,6 +1,7 @@
 import time
 from datetime import datetime
 import pytz
+import secrets
 
 def getTimeNow(timezone='Asia/Bangkok', format="%Y-%m-%d %H:%M:%S"):
 
@@ -20,3 +21,6 @@ def getTimeNow(timezone='Asia/Bangkok', format="%Y-%m-%d %H:%M:%S"):
     formatted_datetime = dt_gmt_plus_7.strftime(format)
 
     return formatted_datetime
+
+def generateRandomString(length):
+    return ''.join(secrets.choice('0123456789') for _ in range(length))
