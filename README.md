@@ -1,4 +1,4 @@
-# Smartcube CLI Module
+# Smartcube CLI - Edge Intelligence Analytic Software
 
 **Note:**
 - This module is programmed in Python 3.10.12.
