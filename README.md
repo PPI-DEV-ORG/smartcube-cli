@@ -48,7 +48,7 @@ Smartcube CLI can be executed in two ways: manually or by utilizing the program 
         ```
 
     - Fill out EDGE_ACCESS_TOKEN, MQTT_PUB_TOPIC and MQTT_SUB_TOPIC after 
-    youvcreate cluster profile from your mobile application
+    you've created cluster from your mobile application
 
 4. Place `mqtt-ssl.crt` inside the project folder. You can request `mqtt-ssl.crt` via email at c550bky4408@bangkit.academy.
 
