@@ -1,12 +1,12 @@
-# SmartCube CLI Module
+# Smartcube CLI Module
 
 **Note:**
 - This module is programmed in Python 3.10.12.
 - Currently, it is compatible with Linux systems only.
 
-## Running SmartCube CLI
+## Running Smartcube CLI
 
-SmartCube CLI can be executed in two ways: manually or by utilizing the program installer available at [SmartCube Installer](https://github.com/PPI-Capstone-Project/smartcube-installer).
+Smartcube CLI can be executed in two ways: manually or by utilizing the program installer available at [Smartcube Installer](https://github.com/PPI-Capstone-Project/smartcube-installer).
 
 ### Manual Execution:
 
@@ -32,7 +32,7 @@ SmartCube CLI can be executed in two ways: manually or by utilizing the program 
 
     - Paste the following variables:
         ```env
-        # SMARTCUBE_API_URL=http://localhost:3000
+        # SMARTcube_API_URL=http://localhost:3000
 
         EDGE_ACCESS_TOKEN=your_edge_token
 
@@ -47,6 +47,9 @@ SmartCube CLI can be executed in two ways: manually or by utilizing the program 
         MQTT_SUB_TOPIC=your_subscriber_topic
         ```
 
+    - Fill out EDGE_ACCESS_TOKEN, MQTT_PUB_TOPIC and MQTT_SUB_TOPIC after 
+    youvcreate cluster profile from your mobile application
+
 4. Place `mqtt-ssl.crt` inside the project folder. You can request `mqtt-ssl.crt` via email at c550bky4408@bangkit.academy.
 
 5. Run the application:
@@ -54,4 +57,4 @@ SmartCube CLI can be executed in two ways: manually or by utilizing the program 
     python app.py
     ```
 
-For detailed installation instructions, please refer to the [SmartCube Installer](https://github.com/PPI-Capstone-Project/smartcube-installer) link.
+For detailed installation instructions, please refer to the [Smartcube Installer](https://github.com/PPI-Capstone-Project/smartcube-installer) link.
