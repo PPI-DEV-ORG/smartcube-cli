@@ -1,37 +1,15 @@
 {
     "devices": [
         {
-            "device_id": 34,
-            "device_vendor_name": "BME680",
-            "edge_server_name": "Klaster 1",
-            "type": "sensor",
-            "source_type": "http",
-            "source_address": "http://192.168.215.216/sensor-data",
-            "assigned_model_type": "dataAnalytic",
-            "assigned_model_index": 1,
-            "additional_info": ""
-        },
-        {
-            "device_id": 35,
+            "device_id": 149,
             "device_vendor_name": "IMOU",
-            "edge_server_name": "Klaster 1",
+            "edge_server_name": "Klaster 3",
             "type": "camera",
             "source_type": "usb",
             "source_address": "/dev/video0",
             "assigned_model_type": "objectDetection",
             "assigned_model_index": 0,
-            "additional_info": ""
-        },
-        {
-            "device_id": 36,
-            "device_vendor_name": "BME680",
-            "edge_server_name": "Klaster 1",
-            "type": "sensor",
-            "source_type": "http",
-            "source_address": "http://192.168.215.216/sensor-data",
-            "assigned_model_type": "dataAnalytic",
-            "assigned_model_index": 1,
-            "additional_info": ""
+            "additional_info": "{'latitude': 0}"
         }
     ]
 }
