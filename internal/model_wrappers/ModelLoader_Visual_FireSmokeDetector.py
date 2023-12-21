@@ -5,6 +5,8 @@ from tflite_support.task import core
 from tflite_support.task import processor
 from tflite_support.task import vision
 from typing import Any
+from tensorflow.python.keras.utils.data_utils import get_file
+import os
 
 import numpy as np
 
@@ -25,8 +27,10 @@ class ModelLoader_Visual_FireSmokeDetector(IObjectDetectorModel):
     __onDetected: Callable[[str, int, np.ndarray], None]
 
     def __init__(self, videoProcessor: IVideoProcessor) -> None:
+        self.cacheDir = "./pretrained_models"
         self.__videoProcessor = videoProcessor
         self.__model_path = "./pretrained_models/firesmoke_detector_daylight/model.tflite"
+        self.__downloadModel("https://storage.googleapis.com/smartcube-bucket/smartcube_models/firesmoke_detector_daylight.zip")
 
     @staticmethod
     def getModelType() -> str:
@@ -38,7 +42,7 @@ class ModelLoader_Visual_FireSmokeDetector(IObjectDetectorModel):
     @staticmethod
     def getModelMetadata() -> dict[str, Any]:
         return {
-            "model_name": "ssd_mobilenet_v2_fpnlite",
+            "model_name": "firesmoke_detector_ssd_mobilenet_v2_fpnlite",
             "version": "v2.0.0",
             "smcb_wrapper_version": "v1.0.0",
         }
@@ -61,6 +65,15 @@ class ModelLoader_Visual_FireSmokeDetector(IObjectDetectorModel):
         self.__loadModel()
         return self.__detectObject(frame)
 
+    def __downloadModel(self, modelUrl):
+
+        fileName = os.path.basename(modelUrl)
+
+        os.makedirs(self.cacheDir, exist_ok=True)
+
+        get_file(fname=fileName, origin=modelUrl, cache_dir=self.cacheDir,
+                 cache_subdir="", extract=True)
+        
     def __loadModel(self):
 
         # Initialize the object detection model
