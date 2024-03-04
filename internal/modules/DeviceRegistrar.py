@@ -35,14 +35,14 @@ class DeviceRegistrar(IDeviceRegistrar):
                     # instatiate camera device usb
                     if (device_config["source_type"] == device_constant.USB_CAMERA_DEVICE):
                         self.__devices_instance.append({
-                            "device_instance": USBCamera(device_config["device_id"], device_config["source_address"], device_config["additional_info"], videoProcessor),
+                            "device_instance": USBCamera(device_config["device_id"], device_config["source_address"], device_config, videoProcessor),
                             "assigned_model_class": modelRegistrar.getModelClass(int(device_config['assigned_model_index']))
                         })
 
                     # instatiate camera device rtsp
                     if (device_config["source_type"] == device_constant.RTSP_CAMERA_DEVICE):
                         self.__devices_instance.append({
-                            "device_instance": IPCamera(device_config["device_id"], device_config["source_address"], device_config["additional_info"], videoProcessor),
+                            "device_instance": IPCamera(device_config["device_id"], device_config["source_address"], device_config, videoProcessor),
                             "assigned_model_class": modelRegistrar.getModelClass(int(device_config['assigned_model_index']))
                         })
 

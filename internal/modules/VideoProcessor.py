@@ -10,7 +10,7 @@ class VideoProcessor(IVideoProcessor):
         while True:
             ct += 1
             ret = cap.grab()
-            if ct % 5 == 0: # skip some frames
+            if ct % 6 == 0: # skip some frames
                 ret, frame = cap.retrieve()
                 if not ret: break
                 callback(frame)
@@ -22,20 +22,23 @@ class VideoProcessor(IVideoProcessor):
 
     def streamVideoFrameUSB(self, deviceNumber: int, callback: Callable[[np.ndarray], None]):
         cap = cv2.VideoCapture(deviceNumber)
+        ct = 0
         while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-
-            callback(frame)
+            ct += 1
+            ret = cap.grab()
+            if ct % 6 == 0: # skip some frames
+                ret, frame = cap.retrieve()
+                if not ret: break
+                callback(frame)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
         cap.release()
 
-    def presentInWindow(self, frame):
-        cv2.imshow(f'Camera [x]', frame)
+    def presentInWindow(self, devideId, frame):
+        cv2.imshow(f'Camera {devideId}', frame)
+        cv2.waitKey(1)
 
     def writeText(self, frame: np.ndarray, text: str,  color: typing.Sequence[float], xcoordinate: int, ycoordinate: int):
         cv2.putText(frame, text, (xcoordinate, ycoordinate - 10), cv2.FONT_HERSHEY_PLAIN, 1, color, 2) # type: ignore
@@ -45,7 +48,7 @@ class VideoProcessor(IVideoProcessor):
 
     def redraw(self, frame: np.ndarray, bbox: list):
         self.drawRectangle(frame, bbox, 1)
-        self.presentInWindow(frame)
+        # self.presentInWindow(frame)
         
     def convertFrameToImage(self, frame: np.ndarray) -> io.BufferedReader:
         frame_pil = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))

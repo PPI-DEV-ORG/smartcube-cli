@@ -31,6 +31,7 @@ class ModelLoader_Visual_FireSmokeDetector(IObjectDetectorModel):
         self.__videoProcessor = videoProcessor
         self.__model_path = "./pretrained_models/firesmoke_detector_daylight/model.tflite"
         self.__downloadModel("https://storage.googleapis.com/smartcube-bucket/smartcube_models/firesmoke_detector_daylight.zip")
+        self.__loadModel()
 
     @staticmethod
     def getModelType() -> str:
@@ -62,7 +63,6 @@ class ModelLoader_Visual_FireSmokeDetector(IObjectDetectorModel):
         self.__onDetected = onDetected
         self.__max_output = max_output_size
 
-        self.__loadModel()
         return self.__detectObject(frame)
 
     def __downloadModel(self, modelUrl):
@@ -78,10 +78,11 @@ class ModelLoader_Visual_FireSmokeDetector(IObjectDetectorModel):
 
         # Initialize the object detection model
         base_options = core.BaseOptions(file_name=self.__model_path, use_coral=False, num_threads=1)
-        detection_options = processor.DetectionOptions(max_results=self.__max_output, score_threshold=self.__score_threshold)
+        detection_options = processor.DetectionOptions(max_results=50, score_threshold=0.7)
         options = vision.ObjectDetectorOptions(base_options=base_options, detection_options=detection_options)
         self.__detector = vision.ObjectDetector.create_from_options(options)
         
+        print("Model " + self.getModelMetadata()['model_name'] + " loaded successfully...")
 
     def __detectObject(self, frame: np.ndarray) -> np.ndarray:
         # Create a TensorImage object from the RGB image.

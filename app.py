@@ -22,64 +22,54 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def instantiateCamera(device: dict[str, CameraDevice], videoProcessor: VideoProcessor, notificationService: Notification):
-    model: IObjectDetectorModel = device["assigned_model_class"](videoProcessor)  # type: ignore
-    
-    #Event: this will run when there is at least 1 object detected
+
+def instantiateModel(modelClass: IObjectDetectorModel, videoProcessor: VideoProcessor, notificationService: Notification, inputQueue: multiprocessing.Queue, outputQueue: multiprocessing.Queue):
+
+    print("Child process is running")
+
+    model: IObjectDetectorModel = modelClass(videoProcessor)  # type: ignore
+    devId = 0
+    # Event: this will run when there is at least 1 object detected
+
     def onObjectDetected(classLabel, confidence, frame):
-        notificationService.handleOnObjectDetected(device['device_instance'].getDeviceId(), classLabel, confidence, frame)
+        # print("device id on object detected", devId)
+        notificationService.handleOnObjectDetected(
+            devId, classLabel, confidence, frame)
 
-    #Additional wrapper function to be able accessing other depedencies
-    def inferFrame(frame):
-       videoProcessor.presentInWindow(model.inferenceFrame(frame, 0.7, 0.6, 50, 50, onObjectDetected))
-    
-    #Stream Frame
-    device["device_instance"].streamVideoFrame(lambda frame: inferFrame(frame))
-    
-def instantiateSensor(device: dict[str, SensorDevice], httpClient: IHttpClient, notificationService: Notification, x):
-    model: ISensorModel = device["assigned_model_class"]()  # type: ignore
-    
-    def onThresholdExceeded(riskLevel: str):
-        notificationService.onThresholdExceeded(deviceId=device["device_instance"].getDeviceId(), riskLevel=riskLevel)
-
-    #Event: on infered data
-    def onInfered(inferedPayload: dict):
-        payload = {
-            "data": [
-                {
-                    "edge_server_id": 0,
-                    "device_id": device["device_instance"].getDeviceId(),
-                    "data_measured": inferedPayload["dataMeasured"],
-                    "inference_label_status": inferedPayload["inferenceLabelStatus"],
-                    "captured_at": inferedPayload["capturedAt"]
-                },
-            ]
-        }
-
+    while True:
         try:
-            response = httpClient.getSession().post(
-                url=f'{httpClient.baseUrl()}/edge-device-sensor/{device["device_instance"].getDeviceId()}',
-                data=json.dumps(payload),
-                headers={'Content-Type': 'application/json'}
-            )
+            # Menerima frame dari webcam threads melalui input_queue
+            deviceId, frame = inputQueue.get()
+            devId = deviceId
+            # Proses frame (contoh: konversi ke grayscale)
+            processed_frame = model.inferenceFrame(
+                frame, 0.7, 0.6, 50, 50, onObjectDetected)
+            
 
-            if response.status_code == 200:
-                print("sensor data sent successfully")
-            else:
-                print(
-                    f"failed to sent sensor data: {response.text}")
-                
+            videoProcessor.presentInWindow(deviceId, processed_frame)
+
+            # Mengirim hasil ke main process melalui output_queue
+            outputQueue.put((deviceId, processed_frame))
+
         except Exception as e:
-            print("sending sensor data throw an exception", e)
-        
-    device["device_instance"].streamData(lambda data: model.inferData(data=data, onInfered=onInfered, onThresholdExceeded=onThresholdExceeded))
+            print("Error in child process:", e)
 
-#All dependencies are bootstrapped inside this function
+
+def instantiateCamera(device: dict[str, CameraDevice], inputQueue: multiprocessing.Queue):
+    devMetada = device['device_instance'].getDeviceMetadata()
+
+    def sendFrameToModel(frame):
+        inputQueue.put((devMetada['device_id'], frame))
+
+    # Stream Frame
+    device["device_instance"].streamVideoFrame(lambda frame: sendFrameToModel(frame))
+
+
+# All dependencies are bootstrapped inside this function
 def main():
 
     # Device process list
     deviceProcesses: list[multiprocessing.Process] = []
-    deviceThreads: list[threading.Thread] = []
     deviceProcessesIndex: list[dict] = []
 
     # Init pre configured http client
@@ -91,7 +81,7 @@ def main():
     # Init Registered Models
     modelRegistrar = ModelRegistrar()
     modelRegistrar.load()
-    
+
     # Init Model Manager
     print("\nInstalled Models:")
     modelManager = ModelManager(modelRegistrar=modelRegistrar)
@@ -101,13 +91,15 @@ def main():
     # Init All Devices In config/devices.json
     print("\nDevices Config:")
     deviceRegistar = DeviceRegistrar()
-    deviceRegistar.loadDevices(modelRegistrar=modelRegistrar, videoProcessor=videoProcessor, httpClient=httpClient)
+    deviceRegistar.loadDevices(modelRegistrar=modelRegistrar,
+                               videoProcessor=videoProcessor, httpClient=httpClient)
     for i in range(0, len(deviceRegistar.getDevicesInstance())):
         print(f"{i+1}.", deviceRegistar.getDevicesInstance()[i])
     print("\n")
-    
+
     # Init Notification Module
-    notificationService = Notification(videoProcessor=videoProcessor, httpClient=httpClient)
+    notificationService = Notification(
+        videoProcessor=videoProcessor, httpClient=httpClient)
 
     # Init Host Devices Status Module
     hostDevice = HostDeviceStatus()
@@ -120,93 +112,109 @@ def main():
 
     # Restart Device Process
     def restartDevice(processIndex, messageMetadata):
-        try:
-            deviceProcesses[int(processIndex)].terminate()
-            time.sleep(1)
-            deviceProcesses[int(processIndex)] = multiprocessing.Process(
-                target=instantiateCamera,
-                args=(deviceRegistar.getDevicesInstance()[int(processIndex)],
-                      videoProcessor,
-                      notificationService))
-            deviceProcesses[int(processIndex)].daemon = True
-            deviceProcesses[int(processIndex)].start()
+        print("restart device is being develop")
+        # try:
+        #     deviceProcesses[int(processIndex)].terminate()
+        #     time.sleep(1)
+        #     deviceProcesses[int(processIndex)] = multiprocessing.Process(
+        #         target=instantiateCamera,
+        #         args=(deviceRegistar.getDevicesInstance()[int(processIndex)],
+        #               videoProcessor,
+        #               notificationService))
+        #     deviceProcesses[int(processIndex)].daemon = True
+        #     deviceProcesses[int(processIndex)].start()
 
-            logging.info("device config restarted")
-            # notify user
-            mqttService.publish(json.dumps({'command': '/msg', 'data': "device config restarted"}))
+        #     logging.info("device config restarted")
+        #     # notify user
+        #     mqttService.publish(json.dumps({'command': '/msg', 'data': "device config restarted"}))
 
-        except Exception as e:
-            logging.error(f"restarting device config failed: {e}")
-            # notify user
-            mqttService.publish(json.dumps({'command': '/msg', 'data': f"restarting device config failed: {e}"}))
-            
+        # except Exception as e:
+        #     logging.error(f"restarting device config failed: {e}")
+        #     # notify user
+        #     mqttService.publish(json.dumps({'command': '/msg', 'data': f"restarting device config failed: {e}"}))
+
     # Start Device Process
     def startDevice(processIndex, messageMetadata):
-        # print(deviceRegistar.getDevicesInstance())
-        try:
-            logging.info("starting edge device configuration")
-            p = multiprocessing.Process(
-                target=instantiateCamera,
-                args=(deviceRegistar.getDevicesInstance()[int(processIndex)],
-                      videoProcessor,
-                      notificationService))
-            p.daemon = True
-            p.start()
+        print("start device is being develop")
+        # # print(deviceRegistar.getDevicesInstance())
+        # try:
+        #     logging.info("starting edge device configuration")
+        #     p = multiprocessing.Process(
+        #         target=instantiateCamera,
+        #         args=(deviceRegistar.getDevicesInstance()[int(processIndex)],
+        #               videoProcessor,
+        #               notificationService))
+        #     p.daemon = True
+        #     p.start()
 
-            deviceProcesses.append(p)
-            mqttService.publish(json.dumps({'command': '/msg', 'data': "device config started"}))
+        #     deviceProcesses.append(p)
+        #     mqttService.publish(json.dumps({'command': '/msg', 'data': "device config started"}))
 
-        except Exception as e:
-            logging.error(f"starting device config failed: {e}")
-            # notify user
-            mqttService.publish(json.dumps({'command': '/msg', 'data': f"starting device config failed: {e}"}))
-            
+        # except Exception as e:
+        #     logging.error(f"starting device config failed: {e}")
+        #     # notify user
+        #     mqttService.publish(json.dumps({'command': '/msg', 'data': f"starting device config failed: {e}"}))
+
     # Synchronize Edge Config
     def syncEdgeConfig(arg, metadata):
         try:
-            response = httpClient.getSession().get(f"{httpClient.baseUrl()}/edge-device-config")
+            response = httpClient.getSession().get(
+                f"{httpClient.baseUrl()}/edge-device-config")
             if response.status_code == 200:
                 # Rewrite devices.json to sync configuration between backend to edge config
-                devicesConfig = {"devices": json.loads(response.content.decode())["data"]}
+                devicesConfig = {"devices": json.loads(
+                    response.content.decode())["data"]}
                 with open('internal/config/devices.json', "w") as outfile:
                     outfile.write(json.dumps(devicesConfig, indent=4))
 
                 # Reload Device configuration
                 deviceRegistar.reloadDevices(
-                    modelRegistrar=modelRegistrar, 
+                    modelRegistrar=modelRegistrar,
                     videoProcessor=videoProcessor,
                     httpClient=httpClient)
 
                 logging.info("edge config synchronized")
                 # notify user
-                mqttService.publish(json.dumps({'command': '/msg', 'data': "edge config synchronized"}))
+                mqttService.publish(json.dumps(
+                    {'command': '/msg', 'data': "edge config synchronized"}))
 
             else:
-                logging.info(f"failed to fetch edge devices config. status code: {response.status_code}")
+                logging.info(
+                    f"failed to fetch edge devices config. status code: {response.status_code}")
                 # notify user
-                mqttService.publish(json.dumps({'command': '/msg', 'data': f"edge server failed to fetch edge devices config. status code: {response.status_code}"}))
+                mqttService.publish(json.dumps(
+                    {'command': '/msg', 'data': f"edge server failed to fetch edge devices config. status code: {response.status_code}"}))
 
         except json.JSONDecodeError as e:
             logging.info(f"error synchronize edge config: {e}")
             # notify user
-            mqttService.publish(json.dumps({'command': '/msg', 'data': f"error synchronize edge config: {e}"}))
+            mqttService.publish(json.dumps(
+                {'command': '/msg', 'data': f"error synchronize edge config: {e}"}))
 
     # Prepare command manager
     def commandManager():
         # Command response
-        hostDeviceStatusData = json.dumps({'command': '/hostDeviceStatus', 'data': hostDevice.brief()}, indent=4)
-        deviceConfigData = json.dumps({'command': '/getDeviceConfig', 'data': config.getDevicesConfig()}, indent=4)
-        installedModelsData = json.dumps({'command': '/getInstalledModels', 'data': modelManager.getRegisteredModelsMetadata()}, indent=4)
-        deviceProcessesIndexData = json.dumps({'command': '/getProcesses', 'data': deviceProcessesIndex}, indent=4)
+        hostDeviceStatusData = json.dumps(
+            {'command': '/hostDeviceStatus', 'data': hostDevice.brief()}, indent=4)
+        deviceConfigData = json.dumps(
+            {'command': '/getDeviceConfig', 'data': config.getDevicesConfig()}, indent=4)
+        installedModelsData = json.dumps(
+            {'command': '/getInstalledModels', 'data': modelManager.getRegisteredModelsMetadata()}, indent=4)
+        deviceProcessesIndexData = json.dumps(
+            {'command': '/getProcesses', 'data': deviceProcessesIndex}, indent=4)
 
         # Command Manager
         commandManager = CommandManager()
         commandManager.registerCommand("/restartDevice", '', restartDevice)
         commandManager.registerCommand("/startDevice", '', startDevice)
-        commandManager.registerCommand("/getProcesses", '', lambda arg, metadata: mqttService.publish(deviceProcessesIndexData))
-        commandManager.registerCommand("/hostDeviceStatus", '', lambda arg, metadata: mqttService.publish(hostDeviceStatusData))
-        commandManager.registerCommand("/getDeviceConfig", '', lambda arg, metadata: mqttService.publish(deviceConfigData))
-        commandManager.registerCommand("/getInstalledModels", '', lambda arg, metadata: mqttService.publish(installedModelsData))
+        commandManager.registerCommand(
+            "/getProcesses", '', lambda arg, metadata: mqttService.publish(deviceProcessesIndexData))
+        commandManager.registerCommand(
+            "/hostDeviceStatus", '', lambda arg, metadata: mqttService.publish(hostDeviceStatusData))
+        commandManager.registerCommand(
+            "/getDeviceConfig", '', lambda arg, metadata: mqttService.publish(deviceConfigData))
+        commandManager.registerCommand(
+            "/getInstalledModels", '', lambda arg, metadata: mqttService.publish(installedModelsData))
         commandManager.registerCommand("/syncEdgeConfig", "", syncEdgeConfig)
 
         # Recieve message and process the command
@@ -218,38 +226,68 @@ def main():
 
     # Instantiate in multi processes & threads
     processCounter = 0
-    threadCounter = 0
+
+    # Active Model Process
+    activeModelQueue = {}
+    activeModelProcesses: list[multiprocessing.Process] = []
+    outputQueues = []
+
+    # Cameras Threads
+    camerasChildThreads: list[threading.Thread] = []
+
     for device in deviceRegistar.getDevicesInstance():
-        if device['device_instance'].type() == 'camera': # type: ignore
-            p = multiprocessing.Process(target=instantiateCamera, 
-                args=(device, videoProcessor, notificationService))
+        if device['device_instance'].type() == 'camera':  # type: ignore
+            devMetadata = device['device_instance'].getDeviceMetadata() # type: ignore
+            activeModelKey = f"{devMetadata['assigned_model_type']} + {devMetadata['assigned_model_index']}"
+            if activeModelKey not in activeModelQueue:
+
+                outputQueue = multiprocessing.Queue()
+
+                activeModelQueue[activeModelKey] = {
+                    "inputQueue": multiprocessing.Queue(),
+                    "outputQueue": outputQueue,
+                }
+
+                outputQueues.append(outputQueue)
+
+                p = multiprocessing.Process(target=instantiateModel, args=(modelRegistrar.getModelClass(
+                    devMetadata['assigned_model_index']),  # type: ignore
+                    videoProcessor, notificationService,
+                    activeModelQueue[activeModelKey]["inputQueue"],
+                    activeModelQueue[activeModelKey]["outputQueue"]))
+
+                p.daemon = True
+                p.start()
+                activeModelProcesses.append(p)
+
+
+    for device in deviceRegistar.getDevicesInstance():
+        if device['device_instance'].type() == 'camera':  # type: ignore
+
+            devMetadata = device['device_instance'].getDeviceMetadata() # type: ignore
+
+            activeModelKey = f"{devMetadata['assigned_model_type']} + {devMetadata['assigned_model_index']}"
+            p = threading.Thread(target=instantiateCamera, args=(
+                device, activeModelQueue[activeModelKey]['inputQueue']))
             p.daemon = True
             p.start()
-            deviceProcesses.append(p)
-            deviceProcessesIndex.append({
-                "device_id": device['device_instance'].getDeviceId(), # type: ignore
-                "type": "camera",
-                "process_index": processCounter
-            })
-            processCounter += 1
+            camerasChildThreads.append(p)
 
-        elif device['device_instance'].type() == 'sensor': # type: ignore
-            t = threading.Thread(target=instantiateSensor, args=(device, httpClient, notificationService, 0))
-            t.daemon = True
-            t.start()
-            deviceThreads.append(t)
-            deviceProcessesIndex.append({
-                "device_id": device['device_instance'].getDeviceId(), # type: ignore
-                "type": "sensor",
-                "process_index": threadCounter
-            })
-            threadCounter += 1
+            # deviceProcessesIndex.append({
+            #     # type: ignore
+            #     "device_id": device['device_instance'].getDeviceId(), # type: ignore
+            #     "type": "camera",
+            #     "process_index": processCounter
+            # })
+            # processCounter += 1
 
-    for p in deviceProcesses:
+
+    for p in activeModelProcesses:
         p.join()
 
-    for t in deviceThreads:
-        t.join()
+    for q in camerasChildThreads:
+        q.join()
+
 
 if __name__ == '__main__':
     main()
