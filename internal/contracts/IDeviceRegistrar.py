@@ -19,3 +19,7 @@ class IDeviceRegistrar(ABC):
     @abstractmethod
     def getDevicesInstance(self) -> list[dict[str, Union[Device, IAIModel]]]:
         pass
+
+    @abstractmethod
+    def printConsole(self) -> None:
+        pass

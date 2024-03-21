@@ -19,3 +19,9 @@ class ModelManager:
             modelsMetadata.append(self.__modelRegistrar.getAllModelClass()[i].getModelMetadata())
 
         return modelsMetadata
+
+    def printConsole(self):
+        print("\nInstalled Models:")
+        for i in range(0, len(self.getRegisteredModelsMetadata())):
+            print(f"{i+1}.", self.getRegisteredModelsMetadata()[i])
+        print("\n")

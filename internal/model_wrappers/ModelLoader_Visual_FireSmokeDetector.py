@@ -22,8 +22,6 @@ class ModelLoader_Visual_FireSmokeDetector(IObjectDetectorModel):
     __videoProcessor: IVideoProcessor
     __confidence: int
     __model_path: str
-
-    __score_threshold: float
     __onDetected: Callable[[str, int, np.ndarray], None]
 
     def __init__(self, videoProcessor: IVideoProcessor) -> None:
@@ -50,18 +48,12 @@ class ModelLoader_Visual_FireSmokeDetector(IObjectDetectorModel):
 
     def inferenceFrame(
         self, 
-        frame: np.ndarray, 
-        iou_threshold: float = 0.5,
-        score_threshold: float = 0.7,
-        confidence: int = 50,
-        max_output_size: int = 50,
+        frame: np.ndarray,
         onDetected: Callable[[str, int, np.ndarray], None] = lambda classLabel, confidence, frame: None
     ) -> np.ndarray:
     
-        self.__score_threshold = score_threshold
-        self.__confidence = confidence
+        self.__confidence = 60
         self.__onDetected = onDetected
-        self.__max_output = max_output_size
 
         return self.__detectObject(frame)
 
@@ -109,7 +101,6 @@ class ModelLoader_Visual_FireSmokeDetector(IObjectDetectorModel):
             self.__videoProcessor.writeText(frame, result_text, _TEXT_COLOR, _MARGIN + bbox.origin_x, _MARGIN + _ROW_SIZE + bbox.origin_y) # type: ignore
             self.__videoProcessor.drawRectangle(frame=frame, bbox=[(start_point), (end_point)], color=_TEXT_COLOR)  # type: ignore
 
-        # print(probability, self.__confidence / 100.0, probability > (self.__confidence / 100.0))
         if (probability > (self.__confidence / 100.0)):
             self.__onDetected(category_name, int(probability * 100), frame) 
 

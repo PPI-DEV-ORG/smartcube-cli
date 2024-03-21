@@ -4,21 +4,53 @@ from PIL import Image
 
 class VideoProcessor(IVideoProcessor):
 
+    def openStream(self, url):
+        cap = cv2.VideoCapture(url)
+        if not cap.isOpened():
+            print("Error: Could not open stream.")
+            return None
+        return cap
+
     def streamVideoFrameRTSP(self, rtsp: str, callback: Callable[[np.ndarray], None]):
-        cap = cv2.VideoCapture(rtsp)
+        cap = self.openStream(rtsp)
+        isStreaming = True
         ct = 0
+
         while True:
-            ct += 1
-            ret = cap.grab()
-            if ct % 6 == 0: # skip some frames
-                ret, frame = cap.retrieve()
-                if not ret: break
-                callback(frame)
+            if isStreaming:
+                while True:
+                    try:
+                        if cap is None:
+                            isStreaming = False
+                            break
 
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+                        ct += 1
+                        ret = cap.grab()
+                        if not ret: 
+                            print("Error: Failed to read frame.")
+                            isStreaming = False
+                            break
 
-        cap.release()
+                        if ct % 4 == 0: # skip some frames
+                            ret, frame = cap.retrieve()
+                            callback(frame)
+
+                    except Exception as e:
+                        print("Error:", e)
+                        isStreaming = False
+                        break
+
+            # Attempt to reconnect
+            while not isStreaming:
+                    print("Attempting to reconnect...")
+                    
+                    cap = self.openStream(rtsp)
+                    if cap is not None:
+                        isStreaming = True
+                        print("Reconnected!")
+                    else:
+                        # Delay before attempting to reconnect
+                        cv2.waitKey(3000) # 3 seconds delay before retrying`
 
     def streamVideoFrameUSB(self, deviceNumber: int, callback: Callable[[np.ndarray], None]):
         cap = cv2.VideoCapture(deviceNumber)
@@ -26,7 +58,7 @@ class VideoProcessor(IVideoProcessor):
         while True:
             ct += 1
             ret = cap.grab()
-            if ct % 6 == 0: # skip some frames
+            if ct % 2 == 0: # skip some frames
                 ret, frame = cap.retrieve()
                 if not ret: break
                 callback(frame)

@@ -68,3 +68,9 @@ class DeviceRegistrar(IDeviceRegistrar):
 
     def getDevicesInstance(self) -> list[dict[str, Union[Device, IAIModel]]]:
         return self.__devices_instance
+
+    def printConsole(self) -> None:
+        print("Devices Config:")
+        for i in range(0, len(self.getDevicesInstance())):
+            print(f"{i+1}.", self.getDevicesInstance()[i])
+        print("\n")

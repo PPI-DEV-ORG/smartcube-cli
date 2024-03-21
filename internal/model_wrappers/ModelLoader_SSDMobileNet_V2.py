@@ -36,15 +36,13 @@ class ModelLoader_SSDMobileNet_V2(IObjectDetectorModel):
             "smcb_wrapper_version": "v1.0.0",
         }
 
-    def inferenceFrame(self, frame: np.ndarray, iou_threshold: float = 0.5,
-                 score_threshold: float = 0.5,
-                 confidence: int = 50,
-                 max_output_size: int = 50,
-                 onObjectDetected: Callable[[str, int, np.ndarray], None] = lambda classLabel, confidence, frame: None) -> np.ndarray:
+    def inferenceFrame(self, 
+                frame: np.ndarray,
+                onObjectDetected: Callable[[str, int, np.ndarray], None] = lambda classLabel, confidence, frame: None) -> np.ndarray:
         
-        self.__setThreshold(iou_threshold, score_threshold)
-        self.__setMaxOutputSize(max_output_size)
-        self.__setConfidence(confidence)
+        self.__setThreshold(0.5, 0.5)
+        self.__setMaxOutputSize(50)
+        self.__setConfidence(50)
         self.__onObjectDetected(onObjectDetected)
         
         return self.__detectObject(frame)
